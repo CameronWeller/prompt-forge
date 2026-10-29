@@ -1,0 +1,13 @@
+{
+  "name": "prompt-forge",
+  "description": "prompt-forge: forges loose prompts, agent briefs and goals into outcome-focused briefs for Claude Code.",
+  "owner": {
+    "name": "Cameron Weller"
+  },
+  "plugins": [
+    {
+      "name": "prompt-forge",
+      "source": "./"
+    }
+  ]
+}
