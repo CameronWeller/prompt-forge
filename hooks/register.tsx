@@ -106,22 +106,6 @@ async function notice($: any, title: string, text: string) {
   }
 }
 
-// The stored user message is the forged brief, so the transcript would show the brief in place of
-// your words. We remember brief -> original (persisted in $.store) and redraw the row as your
-// original text followed by the brief as a muted, display-only block. Neither reaches the model.
-const KEY = 'forged:'
-const MAX_KEPT = 300
-function hash(text: string): string {
-  let h = 5381
-  for (let i = 0; i < text.length; i++) h = ((h * 33) ^ text.charCodeAt(i)) >>> 0
-  return `${KEY}${h.toString(36)}:${text.length}`
-}
-async function remember($: any, brief: string, original: string) {
-  await $.store.set(hash(brief.trim()), { original })
-  const keys = (await $.store.keys()).filter((k: string) => k.startsWith(KEY))
-  for (const k of keys.slice(0, Math.max(0, keys.length - MAX_KEPT))) await $.store.delete(k)
-}
-
 // Exact tokens the brief must still contain: backticked spans, quoted strings, URLs, paths,
 // file names and identifiers with digits. Any the model dropped are appended verbatim.
 function anchors(raw: string): string[] {
@@ -162,6 +146,7 @@ export const register: Register = on => {
   // chat), or when it is large. `forge:` forces a short one, `raw:` skips it; the prefix is removed.
   on('prompt.submit', async ($, e, next) => {
     if (e.command || e.isMeta) return next(e)
+    if ((e as any).origin?.kind === 'plugin' && (e as any).origin?.name === $.plugin.name) return next(e) // our own resend
     const typed = e.text.trim()
     if (typed === '' || typed.startsWith('/') || SYSTEM_WRAPPED.test(typed)) return next(e)
     if (RAW.test(typed)) return next({ ...e, text: typed.replace(RAW, '') })
@@ -183,8 +168,19 @@ export const register: Register = on => {
       await notice($, 'not forged', `No brief was made (${why}); the agent received your text as typed.`)
       return next({ ...e, text })
     }
-    await remember($, brief, text)
-    return next({ ...e, text: brief })
+    if (e.attachments !== undefined) {
+      // A prompt with images is rewritten in place (a resend would lose them); the brief is noted.
+      await notice($, 'forged prompt sent to the agent', brief)
+      return next({ ...e, text: brief })
+    }
+    // Hold your prompt and send the brief as its own message, so every client (the desktop app
+    // included) shows exactly what the agent receives. Your words are kept in the record as a
+    // notice the model never reads. If the resend fails, your prompt is sent as typed instead.
+    await notice($, 'your original prompt', text)
+    $.clock.after(1, () => {
+      $.prompt.submit({ text: brief, asUser: true }).catch(() => $.prompt.submit({ text, asUser: true }).catch(() => undefined))
+    })
+    return { drop: 'prompt-forge: forged your prompt. The next message is what the agent receives.' }
   }).catch(($, e, next) => next(e))
 
   // Large agent briefs (Agent tool, workflow agent(), teammates): the agent receives only the
@@ -206,26 +202,6 @@ export const register: Register = on => {
     }
     await notice($, `forged brief sent to agent "${e.description}"`, brief)
     return next({ ...e, prompt: brief })
-  }).catch(($, e, next) => next(e))
-
-  // After your prompt's row is kept, the forged brief follows it as a notice, before the reply.
-  on('session.append', { door: 'prompt' }, async ($, e, next) => {
-    const out = await next(e)
-    const text = e.message.content.map((c: any) => (c.type === 'text' ? c.text : '')).join('').trim()
-    if (text.startsWith('OUTCOME:') && (await $.store.get(hash(text))) !== undefined) {
-      await notice($, 'forged prompt sent to the agent', text)
-    }
-    return out
-  }).catch(($, e, next) => next(e))
-
-  // Where the engine draws the row itself (terminal), show your original words in it; the brief is
-  // in the notice that follows. Other views keep showing what you typed.
-  on('ui.render', { component: 'UserMessage' }, async ($, e, next) => {
-    const brief = e.props.text.trim()
-    if (!brief.startsWith('OUTCOME:')) return next(e)
-    const kept = (await $.store.get(hash(brief))) as { original?: string } | undefined
-    if (kept?.original === undefined) return next(e)
-    return next({ ...e, props: { ...e.props, text: kept.original } })
   }).catch(($, e, next) => next(e))
 
   // Goals you set with /goal: always forged (they steer a whole run and a separate evaluator

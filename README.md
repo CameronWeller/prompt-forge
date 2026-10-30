@@ -38,7 +38,10 @@ claude plugin install prompt-forge --marketplace CameronWeller/prompt-forge
 - **Goals:** `/goal <text>` becomes a verifiable completion condition, sized to what the goal is worth.
 - **Agent briefs:** large prompts for the Agent tool, workflow agents and teammates are forged
   before the agent starts.
-- **Visible:** the brief is written into the conversation as a notice the model never reads.
+- **Visible in the chat:** a forged prompt is held, a one-line notice says so, and the brief is
+  sent as the next message, so you see exactly what the agent receives (desktop app included).
+  Your original wording stays in the record as a notice the model never reads. Prompts with
+  images are rewritten in place instead.
 - **Overrides:** start a prompt with `forge:` to force it, or `raw:` to skip it.
 - **Skips** slash commands and harness-built prompts (`<system-reminder>`, forks, peer messages).
   A transient API error is retried once; if the forge still fails, or a prompt is over 24,000

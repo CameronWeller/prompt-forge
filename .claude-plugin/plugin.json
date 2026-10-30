@@ -1,6 +1,6 @@
 {
   "name": "prompt-forge",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Forges the first prompt of a session, large prompts, large agent briefs and every /goal into an outcome-focused brief behind an isolated model call, so the agent never sees your loose wording.",
   "author": {
     "name": "Cameron Weller",

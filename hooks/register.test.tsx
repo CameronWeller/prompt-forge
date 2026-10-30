@@ -14,6 +14,7 @@ function stubs(on: any, appended: any[], complete = () => ({ value: { isAnswered
   on('ui.status', () => ({ value: undefined }))
   on('ui.toast', () => ({ value: undefined }))
   on('ui.log', () => ({ value: undefined }))
+  on('clock.after', () => ({ value: { cancel: () => undefined } }))
   on('prompt.submit', (_: any, e: any) => ({ ...e }))
   on('session.append', (_: any, e: any, next: any) => (appended.push(e), next(e)))
   on('ui.render', ($: any, e: any) => {
@@ -22,24 +23,20 @@ function stubs(on: any, appended: any[], complete = () => ({ value: { isAnswered
   })
 }
 
-const ROW = (text: string) =>
-  ({
-    plugin: 'prompt-forge',
-    component: 'UserMessage',
-    requestId: 'm1',
-    surface: 'terminal',
-    props: { text, origin: { kind: 'composer' }, isExpanded: false },
-  }) as const
+test('a forged prompt is held, and the brief is sent as the next message', async ($, on) => {
+  const appended: any[] = []
+  stubs(on, appended)
+  const r: any = await $.prompt.submit({ text: ORIGINAL })
+  expect(r.drop).toContain('The next message is what the agent receives')
+  const notes = appended.filter(e => e.message.type === 'system').map(e => e.message.content[0].text)
+  expect(notes.some(n => n.includes('your original prompt') && n.includes(ORIGINAL))).toBe(true)
+})
 
-// The notice after a prompt's row (session.append, door 'prompt') is raised only by the engine,
-// so it is checked end to end with `claude -p --plugin-dir` and the transcript file instead.
-
-test('the terminal row shows your original words', async ($, on) => {
-  stubs(on, [])
-  await $.prompt.submit({ text: ORIGINAL })
-  const ui = await $.ui.mount(ROW(BRIEF))
-  expect((await ui.find({ type: 'Text', text: /^> / }))?.text).toBe(`> ${ORIGINAL}`)
-  await ui.unmount()
+test('the resent brief is not forged again', async ($, on) => {
+  let forged = 0
+  stubs(on, [], () => (forged++, { value: { isAnswered: true, text: BRIEF } }))
+  await $.prompt.submit({ text: BRIEF + ' ' + 'word '.repeat(60), origin: { kind: 'plugin', name: 'prompt-forge' } } as any)
+  expect(forged).toBe(0)
 })
 
 test('harness-wrapped prompts are never forged', async ($, on) => {

@@ -83,7 +83,7 @@ agent (or worker agent) receives **only the forged brief**, never the raw text a
 skill (it is hidden from the model; `/prompt-forge` is for you).
 
 - **User prompts:** forged on the first prompt of every session (also after `/clear`, so every
-  new chat) and on any prompt of 50+ words. The brief replaces your text for the agent. Right after your message, the brief is written into the conversation record as a notice ("prompt-forge · forged prompt sent to the agent") that the model never reads; in the terminal your row also shows your original words. Agent briefs get the same notice. Prompts the harness wraps in `<system-reminder>` and similar tags (session briefs, forks, peer messages) are never forged. A status line shows "forging…"
+  new chat) and on any prompt of 50+ words. Your prompt is held and the brief is sent as the next message, so the chat (desktop app included) shows exactly what the agent receives; your original wording stays in the record as a notice the model never reads. Prompts with images are rewritten in place instead. Agent briefs get a notice with the forged brief. Prompts the harness wraps in `<system-reminder>` and similar tags (session briefs, forks, peer messages) are never forged. A status line shows "forging…"
   while it runs (up to a minute or two). Skipped: slash commands, first prompts under four words, prompts over 24k
   characters. `forge:` forces a short prompt, `raw:` skips the forge (prefix removed).
 - **Goals (`/goal <text>`):** always forged, whatever the size, into one verifiable completion
