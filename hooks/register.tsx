@@ -23,6 +23,9 @@ const FORGE_SYSTEM = [
   'task; only brief it.',
   'Output ONLY the brief, no preface, as these labelled sections, each starting its own line:',
   'OUTCOME: / WHY: / TRACK: / DO: / CREW: / VERIFY: / BOUNDS: / ASSUMPTIONS: / REPORT:',
+  'Size the brief to the task. For a small clear change (TRACK Build-and-verify) keep it to about',
+  '150 words: one or two lines per section, only the steps and crew the work needs. For Clarify',
+  'and Plan, write as much as the open questions and decisions need. Never pad.',
   'Rules:',
   'Ground rules (always):',
   '- Mark what is yours. ASSUMPTIONS holds, as short bullets: each inference, so the agent can tell',
@@ -85,7 +88,7 @@ const GOAL_SYSTEM = [
   '4 Never widen authority: do not require anything destructive, outward-facing, costly or',
   '  secret-touching that the input did not authorize.',
   '5 For code, the condition includes that the tests that passed before still pass.',
-  '6 BMad: right-size the condition. A small change needs only its proof; a large or ambiguous one',
+  '6 Right-size the condition. A small change needs only its proof; a large or ambiguous one',
   '  also needs its decisions recorded where the repo keeps them (spec, ADR, PR description).',
   '  Same language as the input.',
 ].join('\n')
