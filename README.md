@@ -41,7 +41,8 @@ claude plugin install prompt-forge --marketplace CameronWeller/prompt-forge
 - **Visible:** the brief is written into the conversation as a notice the model never reads.
 - **Overrides:** start a prompt with `forge:` to force it, or `raw:` to skip it.
 - **Skips** slash commands and harness-built prompts (`<system-reminder>`, forks, peer messages).
-  If the forge call fails, your text goes through as typed and a toast says so.
+  A transient API error is retried once; if the forge still fails, or a prompt is over 24,000
+  characters, your text goes through as typed and a notice says so.
 
 Each forge is one Opus call (high effort), so a forged prompt takes a few seconds to a minute.
 

@@ -49,3 +49,24 @@ test('harness-wrapped prompts are never forged', async ($, on) => {
   await $.prompt.submit({ text: '<system-reminder>\nrules\n</system-reminder>\nplease start the task now' })
   expect(forged).toBe(0)
 })
+
+test('a transient API error is retried once', async ($, on) => {
+  let calls = 0
+  stubs(on, [], () => {
+    calls++
+    return { value: calls === 1 ? { isAnswered: false, reason: 'api-error', status: 529 } : { isAnswered: true, text: BRIEF } }
+  })
+  await $.prompt.submit({ text: ORIGINAL })
+  expect(calls).toBe(2)
+})
+
+test('a prompt too large to forge says so in the chat', async ($, on) => {
+  const appended: any[] = []
+  let forged = 0
+  stubs(on, appended, () => (forged++, { value: { isAnswered: true, text: BRIEF } }))
+  await $.prompt.submit({ text: 'word '.repeat(6000) })
+  expect(forged).toBe(0)
+  const notices = appended.filter(e => e.message.type === 'system')
+  expect(notices.length).toBe(1)
+  expect(notices[0].message.content[0].text).toContain('not forged')
+})

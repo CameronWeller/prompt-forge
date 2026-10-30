@@ -142,9 +142,10 @@ function anchors(raw: string): string[] {
 }
 
 async function forge($: any, raw: string, ms: number, system = FORGE_SYSTEM, needsOutcome = true) {
-  const r = await $.model.complete({
-    model: MODEL, system, prompt: raw, effort: 'high', maxTokens: 8000, timeoutMs: ms,
-  })
+  const ask = () =>
+    $.model.complete({ model: MODEL, system, prompt: raw, effort: 'high', maxTokens: 8000, timeoutMs: ms })
+  let r = await ask()
+  if (!r.isAnswered && r.reason === 'api-error') r = await ask() // one retry: a transient API error
   if (!r.isAnswered || (needsOutcome && !HAS_OUTCOME.test(r.text))) {
     return { brief: undefined, why: r.isAnswered ? 'malformed reply' : r.reason as string }
   }
@@ -169,7 +170,11 @@ export const register: Register = on => {
     try { isFirst = (await $.session.turns()) === 0 } catch { /* unknown: not first */ }
     const isWorthIt =
       FORCE.test(typed) || words(text) >= LARGE_WORDS || (isFirst && words(text) >= MIN_WORDS)
-    if (!isWorthIt || text.length > MAX_INPUT) return next({ ...e, text })
+    if (!isWorthIt) return next({ ...e, text })
+    if (text.length > MAX_INPUT) {
+      await notice($, 'not forged', `Your prompt is over ${MAX_INPUT.toLocaleString('en-US')} characters, so the agent received it as typed.`)
+      return next({ ...e, text })
+    }
     $.ui.status('prompt-forge: forging this prompt…')
     const { brief, why } = await forge($, text, 150_000)
     $.ui.status(undefined)
@@ -186,7 +191,11 @@ export const register: Register = on => {
   // forged brief. Small briefs, forks, resumes and briefs already starting `OUTCOME:` pass through.
   on('agent.spawn', async ($, e, next) => {
     const raw = e.prompt
-    if (e.resume || e.fork || words(raw) < LARGE_WORDS || raw.length > MAX_INPUT || HAS_OUTCOME.test(raw)) return next(e)
+    if (e.resume || e.fork || words(raw) < LARGE_WORDS || HAS_OUTCOME.test(raw)) return next(e)
+    if (raw.length > MAX_INPUT) {
+      await notice($, 'agent brief not forged', `The brief is over ${MAX_INPUT.toLocaleString('en-US')} characters, so the agent received it as written.`)
+      return next(e)
+    }
     $.ui.status('prompt-forge: forging an agent brief…')
     const { brief, why } = await forge($, raw, 180_000)
     $.ui.status(undefined)

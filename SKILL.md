@@ -103,7 +103,8 @@ skill (it is hidden from the model; `/prompt-forge` is for you).
   looks for backticked spans, quoted strings, URLs, paths, file names and identifiers with
   digits from the original; any the brief dropped are appended under `KEEP VERBATIM`. Prose
   prohibitions rely on the forger's BOUNDS rule, not on the check.
-- If the forge call fails or returns malformed text, the raw prompt goes through and a toast says so.
+- A transient API error is retried once. If the forge still fails, returns malformed text, or the
+  prompt is over 24,000 characters, the raw prompt goes through and a notice says so.
 
 ```
 OUTCOME: <state of the world to achieve, as a verb phrase>
