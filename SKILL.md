@@ -11,70 +11,50 @@ Applies when it matters most, not to every prompt: the **first prompt of a sessi
 act. Everything else runs as typed, with no delay. In a prompt you type: start it with
 `forge:` to force the forge on a short one, or `raw:` to skip it (the prefix is removed).
 
-Sources: felixrieseberg.com/how-to-be-more-ambitious-a-tutorial-for-humans-with-models, and the
-Karpathy guidelines (github.com/multica-ai/andrej-karpathy-skills, MIT) for the execution discipline,
-and the BMad Method (github.com/bmad-code-org/BMAD-METHOD, MIT) for right-sized process.
+Sources: felixrieseberg.com/how-to-be-more-ambitious-a-tutorial-for-humans-with-models supplies the
+structure (Altitude, Depth, Range). The Karpathy guidelines (github.com/multica-ai/andrej-karpathy-skills,
+MIT) and the BMad Method (github.com/bmad-code-org/BMAD-METHOD, MIT) are folded into it.
 
-## Procedure (think it through; show it only as far as it helps the user correct you)
+## Method (Rieseberg's Altitude, Depth and Range, with Karpathy and BMad folded in)
 
-1. **Purpose (Altitude).** What is the goal beyond the goal? What state should the world be
-   in afterwards, and what would otherwise need a meeting to decide? Restate the task as an
-   outcome to *achieve and keep*, not an artifact to produce ("keep the apps crash-free",
-   not "fix this crash"). Creative work: hold the intent, don't inflate it.
-2. **Verbs, not nouns (Range).** Rewrite each noun deliverable as the job it does. "A deck"
-   -> "get busy people to believe a cause-and-effect story and decide under uncertainty in
-   30 minutes". Let the verb choose which fields and methods apply.
-3. **Depth.** Answer four questions before writing the brief:
-   - What would a field-leading professional do that the prompt does not ask for?
-   - What is the rawest material they would start from (not a pre-digested summary)?
-   - Which real instruments and methods would they use (databases, models, simulations,
-     profilers, the industry's own tools; not a markdown table of opinions)?
-   - What *other than the model* verifies the result (a test, a tool it can run, raw data
-     reproducing the claim, an independent reviewer)?
-   Then set a specific, hard, achievable-sounding goal ("200 ms", not "faster"), and
-   challenge the stated assumptions against raw data where cheap.
-4. **Range / crew.** Name the disciplines the outcome needs, plus an adversary (red team,
-   skeptic, forensic checker). Ask each to **do what that role does**, never to "write
-   like" or role-play them.
-5. **Design.** Fix: success checks stated as observable outcomes; constraints and
-   boundaries; what is out of scope; stop conditions; what the report must contain.
-6. **Calibrate (project rules win: CLAUDE.md, AGENTS.md).** Ambition raises the goal and the depth, not the blast
-   radius. Verification still follows the risk tier of the change; do not add suites to
-   aggregate gates. Hard-to-reverse or outward-facing actions, storage safety, secret
-   handling and confirm-first rules are unchanged. If the forged goal is bigger than the
-   literal ask, state the delta in one line and proceed on the literal ask's authority,
-   asking only when the bigger version needs an action that needs approval.
+**Ground rules (always)**
+- **Mark what is yours.** ASSUMPTIONS lists each inference, each reading with a different effect
+  (never picked silently; say which you chose), and `ASK FIRST` on any reading that changes what
+  gets built. Say so when a better or simpler approach exists. Never invent paths, tools or facts.
+- **Never widen authority.** Nothing destructive, outward-facing, irreversible, costly or
+  secret-touching that the input did not authorize; approval-gated actions stay confirm-first.
+  Project rules (CLAUDE.md, AGENTS.md) win.
 
-## Execution discipline (Karpathy guidelines)
+**Altitude (the purpose)**
+- **Verbs, not nouns, first.** Rewrite each deliverable as the job it does ("a deck" -> "get busy
+  people to believe a cause-and-effect story and decide under uncertainty in 30 minutes"), then
+  extrapolate from the verbs.
+- **The goal beyond the goal.** An outcome to achieve and keep, not an artifact ("keep the apps
+  crash-free", not "fix this crash"); the inferred purpose goes in WHY, marked "(inferred)".
+  Creative work: hold the intent, don't inflate it.
+- **Vague words become checkable criteria.** Solutions beyond the literal ask are welcome and
+  listed in ASSUMPTIONS.
+- **Right-sized track:** Clarify a vague notion, Plan a big clear idea, or Build-and-verify a small
+  clear change; record decisions where they outlive the chat (spec, PRD, ADR, `_bmad/`, PR).
 
-Ambition goes into the outcome, the depth and the proof, never into extra scope. Every forged brief
-carries these, and code-changing work gets them in BOUNDS:
+**Depth (work like a field-leading expert)**
+- What would a field-leading professional do that the prompt does not ask for?
+- Start from the rawest material (in existing code, what is actually there) and use the field's
+  real tools, not a markdown table of opinions.
+- DO is numbered steps, each `-> verify: <check>` ("fix the bug" -> "write a failing test, make it pass").
+- Challenge the stated assumptions against raw data where cheap.
+- VERIFY names a judge other than the model and a specific hard goal ("200 ms", not "faster").
 
-- **Think before coding:** state assumptions; never pick silently between readings that differ in
-  effect; mark material ambiguity `ASK FIRST`; say so when a simpler approach exists.
-- **Simplicity first:** the minimum change that reaches the outcome; no speculative features,
-  abstractions, configurability or impossible-case error handling.
-- **Surgical changes:** touch only what the outcome needs, match existing style, mention unrelated
-  dead code rather than deleting it, remove only what your change orphaned.
-- **Goal-driven execution:** DO is numbered steps, each `-> verify: <check>`; vague tasks become
-  tests ("fix the bug" -> "write a failing test, make it pass").
+**Range (draw on several fields)**
+- CREW draws widely: product, architecture, UX, design, development, testing, security, data and
+  statistics, operations, accessibility, legal and compliance, finance, the domain expert, the end
+  user, analyst, journalist, editor, motion and audio design, or any other field that helps, plus
+  an adversary (red team, skeptic, short seller, forensic accountant or checker). Each does what
+  that role does, never role-play.
 
-## Right-sized process (BMad Method)
-
-- **Pick the track:** Clarify a vague notion (settle open questions, write a short brief first),
-  Plan a big clear idea (spec or architecture before code), or Build-and-verify a small clear change.
-- **Decisions explicit and durable:** record them where the repo keeps them (spec, PRD, ADR,
-  `_bmad/` artifacts) or in the PR description, not only in the chat.
-- **Verified context first:** in existing code, start from what is actually there.
-- **Specialized perspectives:** product, architecture, UX, development, testing, only where they help;
-  judgment calls stay with the person.
-- **Learn and adjust:** REPORT says what should change in the plan or spec.
-
-## Output
-
-- Default: one line, `Forged: <outcome verb phrase>; verify by <outside check>.` then act.
-- Ambiguous, expensive or high-risk prompts: a short brief (below) and one question if a
-  decision is truly the user's.
+**Report**
+- What was done, what was skipped and why, which assumptions held, and what should adjust the
+  plan or spec.
 
 ## What the mod does (isolated from the primary agent)
 
@@ -99,8 +79,7 @@ skill (it is hidden from the model; `/prompt-forge` is for you).
   requirements, and lists everything it inferred under `ASSUMPTIONS:` so stated and inferred stay
   apart. It never widens authority: destructive, outward-facing, costly or secret-touching
   actions stay confirm-first. It briefs the task; it does not answer it.
-- **Nothing lost:** the forger must keep every requirement and token. A deterministic check then
-  looks for backticked spans, quoted strings, URLs, paths, file names and identifiers with
+- **Exact tokens kept:** a deterministic check looks for backticked spans, quoted strings, URLs, paths, file names and identifiers with
   digits from the original; any the brief dropped are appended under `KEEP VERBATIM`. Prose
   prohibitions rely on the forger's BOUNDS rule, not on the check.
 - A transient API error is retried once. If the forge still fails, returns malformed text, or the

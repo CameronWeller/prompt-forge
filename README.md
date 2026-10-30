@@ -44,8 +44,7 @@ library copy loads as a session-only plugin and shadows the installed one.
 - **Extrapolates, not just rewrites.** Vague words become checkable criteria, gaps are filled, and
   everything inferred is listed under `ASSUMPTIONS:` so your words and its inferences stay apart.
   Readings that would change what gets built are marked `ASK FIRST`.
-- **Loses nothing.** Every stated requirement survives. A deterministic check re-adds any exact
-  token the brief dropped (paths, URLs, quoted strings, identifiers) under `KEEP VERBATIM`.
+- **Keeps exact tokens.** A deterministic check re-adds any exact token the brief dropped (paths, URLs, quoted strings, identifiers) under `KEEP VERBATIM`.
 - **Never widens authority.** Destructive, outward-facing, costly or secret-touching actions stay
   confirm-first. Your project's own rules (CLAUDE.md, AGENTS.md) still win.
 - **Goals:** `/goal <text>` becomes a verifiable completion condition, sized to what the goal is worth.
@@ -64,13 +63,18 @@ Each forge is one Opus call (high effort), so a forged prompt takes a few second
 
 ## Principles
 
-- **Altitude, Depth, Range** from Felix Rieseberg,
-  [How to be more ambitious](https://felixrieseberg.com/how-to-be-more-ambitious-a-tutorial-for-humans-with-models/):
-  outcomes over artifacts, verbs over nouns, expert methods and outside verification.
+Built on Felix Rieseberg's
+[How to be more ambitious](https://felixrieseberg.com/how-to-be-more-ambitious-a-tutorial-for-humans-with-models/):
+**Altitude** (outcomes over artifacts, verbs over nouns), **Depth** (expert methods, rawest material,
+outside verification) and **Range** (a wide crew plus an adversary). Folded into that structure:
+
 - **Karpathy guidelines** ([multica-ai/andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills), MIT):
-  think before coding, simplicity first, surgical changes, every step verified.
+  never pick silently between readings, ask first when it matters, every step verified.
 - **BMad Method** ([bmad-code-org/BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD), MIT):
-  a right-sized Clarify, Plan or Build-and-verify track, with decisions recorded durably.
+  a right-sized Clarify, Plan or Build-and-verify track, decisions recorded durably, learn and adjust.
+
+The brief does not cap the size of the work: solutions beyond the literal ask are welcome, and are
+labelled under `ASSUMPTIONS` so your words and the forge's additions stay apart.
 
 See [SKILL.md](SKILL.md) for the full method.
 
