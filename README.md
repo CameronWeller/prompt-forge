@@ -14,17 +14,30 @@ Everything else runs as typed, with no delay.
 
 ## Install
 
-At the prompt of a Claude Code terminal session:
+From a shell (any machine with Claude Code):
+
+```bash
+claude plugin install prompt-forge --marketplace CameronWeller/prompt-forge
+```
+
+Or at the prompt of a Claude Code terminal session:
 
 ```
 /plugin install prompt-forge --marketplace CameronWeller/prompt-forge
 ```
 
-From a shell:
+Restart Claude Code (or open a new session) to load it.
+
+## Update
 
 ```bash
-claude plugin install prompt-forge --marketplace CameronWeller/prompt-forge
+claude plugin marketplace update prompt-forge
+claude plugin update prompt-forge@prompt-forge
 ```
+
+Releases are tagged `prompt-forge--v<version>` (and `v<version>` on GitHub with notes).
+If the same plugin was also uploaded to your claude.ai plugin library, remove that copy: a
+library copy loads as a session-only plugin and shadows the installed one.
 
 ## What it does
 
@@ -61,11 +74,14 @@ Each forge is one Opus call (high effort), so a forged prompt takes a few second
 
 See [SKILL.md](SKILL.md) for the full method.
 
-## Develop
+## Develop and release
 
 ```bash
 claude plugin validate .
 claude plugin test .
+# bump "version" in .claude-plugin/plugin.json and .claude-plugin/marketplace.json, commit, then:
+claude plugin tag --push
+gh release create v<version> --title "prompt-forge v<version>" --notes "..."
 ```
 
 ## License
