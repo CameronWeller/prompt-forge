@@ -8,8 +8,14 @@
     {
       "name": "prompt-forge",
       "source": "./",
-      "version": "0.2.2",
+      "version": "0.3.0",
       "description": "Forges the first prompt of a session, large prompts, large agent briefs and every /goal into an outcome-focused brief behind an isolated model call, so the agent never sees your loose wording."
+    },
+    {
+      "name": "prompt-forge-view",
+      "source": "./view",
+      "version": "0.3.0",
+      "description": "Shows prompt-forge's forged prompts in the chat, the desktop app included."
     }
   ]
 }

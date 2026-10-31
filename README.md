@@ -18,7 +18,12 @@ From a shell (any machine with Claude Code):
 
 ```bash
 claude plugin install prompt-forge --marketplace CameronWeller/prompt-forge
+claude plugin install prompt-forge-view --marketplace CameronWeller/prompt-forge
 ```
+
+`prompt-forge-view` is a small companion that prints each forged prompt in the chat (the
+Claude desktop app draws only command output and messages, not plugin notices). Without it the
+forge still works; you just don't see the brief in the desktop app.
 
 Or at the prompt of a Claude Code terminal session:
 
@@ -33,6 +38,7 @@ Restart Claude Code (or open a new session) to load it.
 ```bash
 claude plugin marketplace update prompt-forge
 claude plugin update prompt-forge@prompt-forge
+claude plugin update prompt-forge-view@prompt-forge
 ```
 
 Releases are tagged `prompt-forge--v<version>` (and `v<version>` on GitHub with notes).
@@ -50,8 +56,10 @@ library copy loads as a session-only plugin and shadows the installed one.
 - **Goals:** `/goal <text>` becomes a verifiable completion condition, sized to what the goal is worth.
 - **Agent briefs:** large prompts for the Agent tool, workflow agents and teammates are forged
   before the agent starts.
-- **Visible in the chat:** a forged prompt is held, a one-line notice says so, and the brief is
-  sent as the next message, so you see exactly what the agent receives (desktop app included).
+- **Visible in the chat:** a forged prompt is held, "Forging your prompt…" shows while it runs,
+  then "Forged prompt the agent receives:" with the full brief, then the brief is sent as the
+  next message, so you see exactly what the agent receives (desktop app included, with
+  `prompt-forge-view`). Failures show "Not forged (reason)".
   Your original wording stays in the record as a notice the model never reads. Prompts with
   images are rewritten in place instead.
 - **Overrides:** start a prompt with `forge:` to force it, or `raw:` to skip it.

@@ -102,6 +102,27 @@ async function notice($: any, title: string, text: string) {
   }
 }
 
+// The forged text reaches the chat as output of `/forged`, answered by the companion plugin
+// prompt-forge-view (a plugin cannot answer a command it runs itself). Falls back to a log row.
+async function show($: any, text: string) {
+  try {
+    await $.command.run({ command: 'forged', args: text })
+  } catch {
+    $.ui.log(`prompt-forge · ${text}`)
+  }
+}
+async function resend($: any, text: string, fallback?: string) {
+  try {
+    await $.prompt.submit({ text, asUser: true })
+  } catch {
+    if (fallback !== undefined) await $.prompt.submit({ text: fallback, asUser: true }).catch(() => undefined)
+  }
+}
+// Runs outside the hook, so the session is idle (the prompt was held) and the chat stays live.
+function later($: any, fn: () => unknown) {
+  $.clock.after(1, () => { void Promise.resolve(fn()).catch(() => undefined) })
+}
+
 // Exact tokens the brief must still contain: backticked spans, quoted strings, URLs, paths,
 // file names and identifiers with digits. Any the model dropped are appended verbatim.
 function anchors(raw: string): string[] {
@@ -153,30 +174,35 @@ export const register: Register = on => {
       FORCE.test(typed) || words(text) >= LARGE_WORDS || (isFirst && words(text) >= MIN_WORDS)
     if (!isWorthIt) return next({ ...e, text })
     if (text.length > MAX_INPUT) {
-      await notice($, 'not forged', `Your prompt is over ${MAX_INPUT.toLocaleString('en-US')} characters, so the agent received it as typed.`)
-      return next({ ...e, text })
-    }
-    $.ui.status('prompt-forge: forging this prompt…')
-    const { brief, why } = await forge($, text, 150_000)
-    $.ui.status(undefined)
-    if (brief === undefined) {
-      $.ui.toast(`prompt-forge: no brief made (${why}); sent as typed`)
-      await notice($, 'not forged', `No brief was made (${why}); the agent received your text as typed.`)
+      later($, () => show($, `Not forged: your prompt is over ${MAX_INPUT.toLocaleString('en-US')} characters, so the agent received it as typed.`))
       return next({ ...e, text })
     }
     if (e.attachments !== undefined) {
-      // A prompt with images is rewritten in place (a resend would lose them); the brief is noted.
-      await notice($, 'forged prompt sent to the agent', brief)
+      // A prompt with images is forged in place (a resend would lose them); the brief is shown after.
+      const { brief, why } = await forge($, text, 150_000)
+      if (brief === undefined) {
+        later($, () => show($, `Not forged (${why}). The agent received your prompt as typed.`))
+        return next({ ...e, text })
+      }
+      later($, () => show($, `Forged prompt the agent received:\n\n${brief}`))
       return next({ ...e, text: brief })
     }
-    // Hold your prompt and send the brief as its own message, so every client (the desktop app
-    // included) shows exactly what the agent receives. Your words are kept in the record as a
-    // notice the model never reads. If the resend fails, your prompt is sent as typed instead.
+    // Hold your prompt. Outside the hook: say it is forging, forge, show the forged prompt as its
+    // own chat row (the desktop app draws command output), then send it. Your words stay in the
+    // record as a notice the model never reads. On failure your prompt goes through as typed.
     await notice($, 'your original prompt', text)
-    $.clock.after(1, () => {
-      $.prompt.submit({ text: brief, asUser: true }).catch(() => $.prompt.submit({ text, asUser: true }).catch(() => undefined))
+    later($, async () => {
+      await show($, 'Forging your prompt…')
+      const { brief, why } = await forge($, text, 150_000)
+      if (brief === undefined) {
+        await show($, `Not forged (${why}). The agent receives your prompt as typed.`)
+        await resend($, text)
+        return
+      }
+      await show($, `Forged prompt the agent receives:\n\n${brief}`)
+      await resend($, brief, text)
     })
-    return { drop: 'prompt-forge: forged your prompt. The next message is what the agent receives.' }
+    return { drop: 'prompt-forge: forging your prompt; the forged version follows.' }
   }).catch(($, e, next) => next(e))
 
   // Large agent briefs (Agent tool, workflow agent(), teammates): the agent receives only the
@@ -197,6 +223,7 @@ export const register: Register = on => {
       return next(e)
     }
     await notice($, `forged brief sent to agent "${e.description}"`, brief)
+    later($, () => show($, `Forged brief sent to agent "${e.description}":\n\n${brief}`))
     return next({ ...e, prompt: brief })
   }).catch(($, e, next) => next(e))
 

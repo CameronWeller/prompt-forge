@@ -14,7 +14,7 @@ function stubs(on: any, appended: any[], complete = () => ({ value: { isAnswered
   on('ui.status', () => ({ value: undefined }))
   on('ui.toast', () => ({ value: undefined }))
   on('ui.log', () => ({ value: undefined }))
-  on('clock.after', () => ({ value: { cancel: () => undefined } }))
+  on('clock.after', () => ({ value: {} }))
   on('prompt.submit', (_: any, e: any) => ({ ...e }))
   on('session.append', (_: any, e: any, next: any) => (appended.push(e), next(e)))
   on('ui.render', ($: any, e: any) => {
@@ -23,11 +23,11 @@ function stubs(on: any, appended: any[], complete = () => ({ value: { isAnswered
   })
 }
 
-test('a forged prompt is held, and the brief is sent as the next message', async ($, on) => {
+test('a forged prompt is held, and its original words are kept as a notice', async ($, on) => {
   const appended: any[] = []
   stubs(on, appended)
   const r: any = await $.prompt.submit({ text: ORIGINAL })
-  expect(r.drop).toContain('The next message is what the agent receives')
+  expect(r.drop).toContain('the forged version follows')
   const notes = appended.filter(e => e.message.type === 'system').map(e => e.message.content[0].text)
   expect(notes.some(n => n.includes('your original prompt') && n.includes(ORIGINAL))).toBe(true)
 })
@@ -47,23 +47,24 @@ test('harness-wrapped prompts are never forged', async ($, on) => {
   expect(forged).toBe(0)
 })
 
-test('a transient API error is retried once', async ($, on) => {
+test('a transient API error is retried once (agent brief, forged inline)', async ($, on) => {
   let calls = 0
   stubs(on, [], () => {
     calls++
     return { value: calls === 1 ? { isAnswered: false, reason: 'api-error', status: 529 } : { isAnswered: true, text: BRIEF } }
   })
-  await $.prompt.submit({ text: ORIGINAL })
+  let seen = ''
+  on('agent.spawn', (_: any, e: any) => ((seen = e.prompt), { model: 'haiku' }))
+  await $.agent.spawn({ prompt: 'word '.repeat(60), description: 'test' } as any)
   expect(calls).toBe(2)
+  expect(seen.startsWith('OUTCOME:')).toBe(true)
 })
 
-test('a prompt too large to forge says so in the chat', async ($, on) => {
-  const appended: any[] = []
+test('a prompt too large to forge goes through as typed', async ($, on) => {
   let forged = 0
-  stubs(on, appended, () => (forged++, { value: { isAnswered: true, text: BRIEF } }))
-  await $.prompt.submit({ text: 'word '.repeat(6000) })
+  stubs(on, [], () => (forged++, { value: { isAnswered: true, text: BRIEF } }))
+  const big = 'word '.repeat(6000).trim()
+  const r: any = await $.prompt.submit({ text: big })
   expect(forged).toBe(0)
-  const notices = appended.filter(e => e.message.type === 'system')
-  expect(notices.length).toBe(1)
-  expect(notices[0].message.content[0].text).toContain('not forged')
+  expect(r.drop).toBeUndefined()
 })

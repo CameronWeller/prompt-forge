@@ -1,0 +1,8 @@
+{
+  "name": "prompt-forge-view",
+  "version": "0.3.0",
+  "description": "Shows prompt-forge's forged prompts in the chat, the desktop app included.",
+  "author": { "name": "Cameron Weller", "url": "https://github.com/CameronWeller" },
+  "repository": "https://github.com/CameronWeller/prompt-forge",
+  "license": "MIT"
+}
