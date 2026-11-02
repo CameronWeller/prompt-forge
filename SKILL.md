@@ -65,7 +65,8 @@ skill (it is hidden from the model; `/prompt-forge` is for you).
 - **User prompts:** forged on the first prompt of every session (also after `/clear`, so every
   new chat) and on any prompt of 50+ words. Your prompt is held; the chat shows "Forging your prompt…", then the full forged prompt (printed by the companion plugin `prompt-forge-view`, since the desktop app draws command output but not plugin notices), then the brief is sent as the next message; your original wording stays in the record as a notice the model never reads. Prompts with images are rewritten in place instead. Agent briefs get a notice with the forged brief. Prompts the harness wraps in `<system-reminder>` and similar tags (session briefs, forks, peer messages) are never forged. A status line shows "forging…"
   while it runs (up to a minute or two). Skipped: slash commands, first prompts under four words, prompts over 24k
-  characters. `forge:` forces a short prompt, `raw:` skips the forge (prefix removed).
+  characters. `forge:` forces a short prompt, `raw:` skips the forge (prefix removed). A plain `claude -p` run
+  (a scheduled agent) goes through as typed: it ends with its one prompt, so a held prompt would never run.
 - **Goals (`/goal <text>`):** always forged, whatever the size, into one verifiable completion
   condition of whatever length the goal is worth (the evaluator checks it against the conversation): an
   outcome to reach and keep, vague words turned into thresholds, the proving evidence named

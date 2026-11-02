@@ -63,7 +63,8 @@ library copy loads as a session-only plugin and shadows the installed one.
   Your original wording stays in the record as a notice the model never reads. Prompts with
   images are rewritten in place instead.
 - **Overrides:** start a prompt with `forge:` to force it, or `raw:` to skip it.
-- **Skips** slash commands and harness-built prompts (`<system-reminder>`, forks, peer messages).
+- **Skips** slash commands and harness-built prompts (`<system-reminder>`, forks, peer messages), and plain `claude -p`
+  runs: a scheduled agent ends with its one prompt, so a held prompt would never run.
   A transient API error is retried once; if the forge still fails, or a prompt is over 24,000
   characters, your text goes through as typed and a notice says so.
 

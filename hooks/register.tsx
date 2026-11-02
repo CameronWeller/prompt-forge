@@ -173,6 +173,11 @@ export const register: Register = on => {
     const isWorthIt =
       FORCE.test(typed) || words(text) >= LARGE_WORDS || (isFirst && words(text) >= MIN_WORDS)
     if (!isWorthIt) return next({ ...e, text })
+    // A plain `claude -p` run has no surface and ends with its one prompt: a held prompt would never
+    // be resent, so the agent would never run. Scheduled agents go through as typed.
+    let printRun = false
+    try { printRun = (await $.session.surfaces()).length === 0 } catch { /* unknown: not a print run */ }
+    if (printRun) return next({ ...e, text })
     if (text.length > MAX_INPUT) {
       later($, () => show($, `Not forged: your prompt is over ${MAX_INPUT.toLocaleString('en-US')} characters, so the agent received it as typed.`))
       return next({ ...e, text })
