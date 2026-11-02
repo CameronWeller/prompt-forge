@@ -3,13 +3,14 @@ import { expect, test } from 'claude-code/testing'
 const BRIEF = 'OUTCOME: Ship the invite flow.\nWHY: teammates join.\nDO: build it.'
 const ORIGINAL = 'ship the invite flow so teammates can join'
 
-function stubs(on: any, appended: any[], complete = () => ({ value: { isAnswered: true, text: BRIEF } })) {
+function stubs(on: any, appended: any[], complete = () => ({ value: { isAnswered: true, text: BRIEF } }), surfaces: string[] = ['terminal']) {
   const kept = new Map<string, unknown>()
   on('store.set', (_: any, e: any) => (kept.set(e.key, e.value), { value: undefined }))
   on('store.get', (_: any, e: any) => ({ value: kept.get(e.key) }))
   on('store.keys', () => ({ value: [...kept.keys()] }))
   on('store.delete', (_: any, e: any) => (kept.delete(e.key), { value: undefined }))
   on('session.turns', () => ({ value: 0 }))
+  on('session.surfaces', () => ({ value: surfaces }))
   on('model.complete', complete)
   on('ui.status', () => ({ value: undefined }))
   on('ui.toast', () => ({ value: undefined }))
@@ -67,4 +68,13 @@ test('a prompt too large to forge goes through as typed', async ($, on) => {
   const r: any = await $.prompt.submit({ text: big })
   expect(forged).toBe(0)
   expect(r.drop).toBeUndefined()
+})
+
+test('a claude -p run has no surface, so its prompt goes through as typed, unforged', async ($, on) => {
+  let forged = 0
+  stubs(on, [], () => (forged++, { value: { isAnswered: true, text: BRIEF } }), [])
+  const r: any = await $.prompt.submit({ text: ORIGINAL })
+  expect(r.drop).toBeUndefined()
+  expect(r.text).toBe(ORIGINAL)
+  expect(forged).toBe(0)
 })
