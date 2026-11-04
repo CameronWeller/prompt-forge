@@ -58,6 +58,11 @@ def assemble(brief: str, material: str, request: str) -> str:
 
 
 def codex_binary() -> str:
+    pinned = os.environ.get("PROMPT_FORGE_REAL_CODEX")
+    if pinned:
+        if not Path(pinned).is_file():
+            raise ForgeError("The pinned isolated Codex binary is unavailable.")
+        return pinned
     binary = shutil.which("codex.exe" if os.name == "nt" else "codex")
     if not binary:
         raise ForgeError("Codex CLI was not found on PATH.")

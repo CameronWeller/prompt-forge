@@ -8,8 +8,8 @@ import threading
 
 
 class AppServer:
-    def __init__(self, on_event):
-        binary = shutil.which('codex.exe' if os.name == 'nt' else 'codex')
+    def __init__(self, on_event, binary=None):
+        binary = binary or shutil.which('codex.exe' if os.name == 'nt' else 'codex')
         if not binary:
             raise RuntimeError('Codex CLI is not installed or is not on PATH.')
         env = os.environ.copy()

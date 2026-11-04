@@ -20,6 +20,8 @@ jobs:
       CARGO_PROFILE_RELEASE_LTO: 'false'
       CARGO_BUILD_JOBS: '3'
       LIBSQLITE3_FLAGS: SQLITE_DISABLE_INTRINSIC
+      CARGO_HOME: D:\c
+      CARGO_TARGET_DIR: D:\t
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
@@ -33,6 +35,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582
         with:
           targets: x86_64-pc-windows-msvc
+      - name: Enable long source paths
+        run: git config --global core.longpaths true
       - uses: ./.github/actions/setup-msvc-env
         with:
           target: x86_64-pc-windows-msvc
@@ -50,6 +54,6 @@ jobs:
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
         with:
           name: prompt-forge-codex-0.166.0-alpha.6-windows-x64
-          path: codex-rs/target/x86_64-pc-windows-msvc/release/codex.exe
+          path: D:/t/x86_64-pc-windows-msvc/release/codex.exe
           if-no-files-found: error
           retention-days: 30
