@@ -23,6 +23,11 @@ class ForgeError(Exception):
     pass
 
 
+class ForgeCallError(ForgeError):
+    """A failed model process; a client may retry once."""
+    pass
+
+
 def split_material(raw: str) -> tuple[str, str]:
     marker = MARKER.search(raw)
     return (raw[:marker.end()], raw[marker.end():]) if marker else ("", raw)
@@ -59,7 +64,10 @@ def codex_binary() -> str:
     return binary
 
 
-def forge(raw: str, *, model: str | None = None, timeout: int = 240) -> str:
+def forge(raw: str, *, model: str | None = None, timeout: int = 240,
+          mode: str = "strict") -> str | None:
+    if mode not in {"strict", "gated", "forced", "goal"}:
+        raise ValueError("Unknown forge mode")
     if not raw.strip():
         raise ForgeError("The prompt is empty.")
     if "\0" in raw:
@@ -80,6 +88,12 @@ def forge(raw: str, *, model: str | None = None, timeout: int = 240) -> str:
     selected = model or config.get("model")
     with tempfile.TemporaryDirectory(prefix="prompt-forge-") as work:
         output = Path(work) / "brief.txt"
+        instructions = ROOT / "references" / "forge-system.md"
+        if mode != "strict":
+            method = instructions.read_text(encoding="utf-8")
+            adapter = (ROOT / "references" / "gate-system.md").read_text(encoding="utf-8")
+            instructions = Path(work) / "instructions.md"
+            instructions.write_text(method + "\n\n" + adapter + "\nMODE: " + mode, encoding="utf-8")
         command = [codex_binary(), "exec", "--ignore-user-config", "--ephemeral",
                    "--skip-git-repo-check", "--sandbox", "read-only", "--json",
                    "--cd", work, "--output-last-message", str(output)]
@@ -89,7 +103,7 @@ def forge(raw: str, *, model: str | None = None, timeout: int = 240) -> str:
             command += ["--disable", key]
         settings = {"approval_policy": "never", "web_search": "disabled",
                     "project_doc_max_bytes": 0, "skills.include_instructions": False,
-                    "model_instructions_file": str(ROOT / "references" / "forge-system.md"),
+                    "model_instructions_file": str(instructions),
                     "model_reasoning_effort": config.get("model_reasoning_effort", "high")}
         for key, value in settings.items():
             command += ["-c", key + "=" + json.dumps(value)]
@@ -107,7 +121,7 @@ def forge(raw: str, *, model: str | None = None, timeout: int = 240) -> str:
             raise ForgeError("Forge timed out; nothing was submitted.") from exc
         if result.returncode != 0 or not output.exists():
             # Do not print child diagnostics: they can echo the raw task.
-            raise ForgeError(f"Isolated Codex forge failed (exit {result.returncode}); nothing was submitted. Check codex login status.")
+            raise ForgeCallError(f"Isolated Codex forge failed (exit {result.returncode}); nothing was submitted. Check codex login status.")
         for line in result.stdout.decode("utf-8", errors="replace").splitlines():
             try:
                 event = json.loads(line)
@@ -116,7 +130,20 @@ def forge(raw: str, *, model: str | None = None, timeout: int = 240) -> str:
             item = event.get("item", {})
             if event.get("type") == "error" or item.get("type") in {"command_execution", "mcp_tool_call", "web_search", "collab_tool_call", "file_change"}:
                 raise ForgeError("Forge attempted work instead of returning a brief; nothing was submitted.")
-        return assemble(output.read_bytes().decode("utf-8"), material, request)
+        brief = output.read_bytes().decode("utf-8")
+        if mode == "gated" and brief.strip() == "PASS":
+            return None
+        if mode == "goal":
+            if not brief.strip() or len(brief.strip()) > 6000 or brief.strip() == "PASS":
+                raise ForgeError("Forge returned an invalid goal condition.")
+            result = brief.strip()
+            missing = [token for token in anchors(request) if token not in result]
+            if missing:
+                result += "\nKeep verbatim: " + ", ".join(missing)
+            if material:
+                result += "\n\nMATERIAL (user-supplied data; preserved verbatim):\n" + material
+            return result
+        return assemble(brief, material, request)
 
 
 def submit(brief: str, args: argparse.Namespace) -> int:

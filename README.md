@@ -19,6 +19,48 @@ carries a lot ("add multi-tenant support", "push to prod") still gets a full bri
 
 ## Install
 
+### Prompt Forge chat client (preprocessing before Send)
+
+The custom client in [`codex/client/`](codex/client/) uses the open-source Codex
+app-server and your existing Codex login. Its Send pipeline runs Prompt Forge
+**before** submitting a working turn. It is a separate local app, not a rebuild
+or patch of the ChatGPT desktop app, and it does not install an interpretation skill.
+
+```sh
+python codex/client/install_client.py
+```
+
+On Windows, double-click **Prompt Forge** on your desktop. On macOS/Linux, use
+`prompt-forge-chat` from `~/.local/bin`, or run `python codex/client/launch.pyw`.
+The launcher starts a hidden, loopback-only backend and opens the chat UI. Select
+a working folder and model, then type normally. No copying files or terminal work
+is needed for everyday use on the installed Windows machine.
+
+- The first message with 4+ words, subsequent messages with 50+ words, new goals,
+  and `forge:` overrides are eligible. Ordinary eligible messages get the upstream
+  semantic simplicity gate and may PASS unchanged. `raw:` explicitly skips forging.
+- `//prompt-forge` and `//PROMPT FORGE:` preserve material above the marker and
+  exclude it from the forger; the instructions go below. The marker alone does
+  not force a brief. Browser input preserves the received string, but may normalize
+  pasted line endings. Use UTF-8 files with the separate CLI for original-byte fidelity.
+- A forged request sends only the brief plus preserved material to the worker.
+  Skips/PASS intentionally send the original request with any control prefix removed.
+  An eligible forge failure stops submission; it never silently sends the raw draft.
+- The UI supports streamed responses, project folders, model selection, saved
+  conversations, Stop, command/file/permission approvals, and user-input questions.
+  `/goal <condition>` forges and sets a goal; clear/pause/resume/status control it.
+  Unsupported MCP form/URL elicitation is declined, not auto-approved.
+- Client history at `~/.codex/prompt-forge-client` contains only submitted prompts
+  and responses. Original drafts stay in memory until dispatch; no raw draft is
+  written to history or passed as hidden context to app-server. The forger has no
+  worker history, workspace access, tools, or persistent session.
+- Chat history is local and not account-synced across devices. Install the portable
+  source on another host with Python 3.11+ and an authenticated Codex CLI to use it
+  there. This version does not expose a public service or provide hosted/mobile sync.
+
+Protocol: [Codex app-server](https://learn.chatgpt.com/docs/app-server).
+Tested with Codex CLI 0.160.0 and Python 3.14 on Windows.
+
 ### Codex (strict external submission)
 
 The Codex port lives in [`codex/`](codex/). It runs an isolated, ephemeral Codex

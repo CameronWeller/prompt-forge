@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Prompt Forge</title><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script></head>
+<body>
+<aside>
+  <div class="brand"><span class="mark">F</span><div>Prompt Forge<small>YOUR CODEX WORKSPACE</small></div></div>
+  <button id="new" class="new">＋ New chat</button>
+  <div class="sidebar-label">CONVERSATIONS</div><nav id="chats" aria-label="Conversations"></nav>
+  <div class="account"><span class="dot"></span><div><strong id="account">Connecting to Codex…</strong><small>Existing Codex sign-in · local client</small></div></div>
+</aside>
+<main>
+  <header><div><span class="eyebrow">FORGE / WORK</span><h1 id="title">A clearer starting point</h1></div><div id="connection" class="pill">Connecting</div></header>
+  <div id="context" class="context"></div>
+  <div id="error" class="error" role="alert" hidden></div>
+  <section id="conversation" aria-label="Chat messages">
+    <div id="welcome"><div class="hero-icon">✳</div><span class="eyebrow">THOUGHTFUL INPUT. FOCUSED WORK.</span><h2>Say it roughly.<br><em>Send it precisely.</em></h2><p>A separate forge sharpens eligible requests before<br>your working agent sees them.</p><div class="flow"><span>01 &nbsp; Your request</span><b>→</b><span>02 &nbsp; Isolated forge</span><b>→</b><span>03 &nbsp; Codex works</span></div></div>
+    <div id="messages"></div>
+  </section>
+  <section id="requests" aria-label="Pending approvals and questions"></section>
+  <div class="composer-wrap">
+    <div id="progress" role="status" aria-live="polite">Ready for a new idea</div>
+    <form id="compose"><textarea id="input" rows="4" aria-label="Your message" placeholder="What would you like to work on?" spellcheck="true"></textarea><div class="composer-bottom"><span>Enter to send · Shift + Enter for a new line</span><div><button id="recover" type="button" class="secondary" hidden>Check status</button><button id="stop" type="button" class="secondary" hidden>Stop</button><button id="send" type="submit">Send ↗</button></div></div></form>
+    <details class="help"><summary>How forging and raw material work</summary><p>First messages of 4+ words and later messages of 50+ words get a simplicity check. <code>forge:</code> forces a brief; <code>raw:</code> bypasses it. <code>/goal</code> refines and sets a completion condition. Eligible forge failures stop submission.</p><pre>Exact source text, logs, or code
+//prompt-forge
+Your request about that material</pre><p>Text above the marker bypasses the forge and reaches the worker unchanged. The marker alone does not force forging. Browser input may normalize pasted line endings. Original drafts are not saved; chat history contains only what the worker received.</p></details>
+  </div>
+</main>
+<dialog id="setup"><form id="setup-form"><span class="eyebrow">NEW CONVERSATION</span><h2>Choose where to work</h2><label for="folder">Working folder</label><input id="folder" required autocomplete="off"><label for="model">Model</label><select id="model"><option value="">Your configured Codex default</option></select><label for="sandbox">File access</label><select id="sandbox"><option value="workspace-write">Edit files in this folder · ask for escalations</option><option value="read-only">Read only</option></select><p class="subtle">Your existing Codex login and configured tools are used. Each chat has its own worker history.</p><div class="dialog-actions"><button id="cancel-setup" type="button" class="secondary">Cancel</button><button type="submit">Create chat</button></div></form></dialog>
+</body></html>
