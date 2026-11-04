@@ -2,8 +2,8 @@
 
 A Claude Code mod that turns loose prompts into outcome-focused briefs before the agent sees them.
 
-When it matters most (the first prompt of a session, any prompt or agent brief of 50+ words, and
-every `/goal`), your text goes to an isolated, tool-less Opus call that extrapolates what you mean.
+When it matters most (the first prompt of a session, any prompt of 50+ words, and every `/goal`
+you set), your text goes to an isolated, tool-less Opus call that extrapolates what you mean.
 The agent receives only the forged brief:
 
 ```
@@ -11,6 +11,11 @@ OUTCOME / WHY / TRACK / DO / CREW / VERIFY / BOUNDS / ASSUMPTIONS / REPORT
 ```
 
 Everything else runs as typed, with no delay.
+
+A typed prompt that is already simple and clear (one reading, a named target, a checkable
+"done", no vague words, one deliverable or a question, nothing destructive or outward-facing) goes
+to the agent exactly as typed. The forge judges this by meaning, never length: a short prompt that
+carries a lot ("add multi-tenant support", "push to prod") still gets a full brief.
 
 ## Install
 
@@ -54,17 +59,24 @@ library copy loads as a session-only plugin and shadows the installed one.
 - **Never widens authority.** Destructive, outward-facing, costly or secret-touching actions stay
   confirm-first. Your project's own rules (CLAUDE.md, AGENTS.md) still win.
 - **Goals:** `/goal <text>` becomes a verifiable completion condition, sized to what the goal is worth.
-- **Agent briefs:** large prompts for the Agent tool, workflow agents and teammates are forged
-  before the agent starts.
 - **Visible in the chat:** a forged prompt is held, "Forging your prompt…" shows while it runs,
   then "Forged prompt the agent receives:" with the full brief, then the brief is sent as the
   next message, so you see exactly what the agent receives (desktop app included, with
   `prompt-forge-view`). Failures show "Not forged (reason)".
   Your original wording stays in the record as a notice the model never reads. Prompts with
   images are rewritten in place instead.
-- **Overrides:** start a prompt with `forge:` to force it, or `raw:` to skip it.
-- **Skips** slash commands and harness-built prompts (`<system-reminder>`, forks, peer messages), and plain `claude -p`
-  runs: a scheduled agent ends with its one prompt, so a held prompt would never run.
+- **Simple requests pass:** the chat shows "Not forged: a simple, clear request" and the agent
+  receives your exact words. When unsure, the forge writes the brief.
+- **Overrides:** start a prompt with `forge:` to force a full brief (even for a simple one), or
+  `raw:` to skip the forge.
+- **Only what you send:** the forge reads the engine's stamp on each prompt and fires only for
+  what you personally submit: typed at the prompt (desktop app included), Remote Control, or Slack.
+  `claude -p` runs, the desktop app's own events, schedules and `/loop`, background-task
+  notices, other sessions, subagents and other plugins go through untouched, with no model call.
+  Agent briefs are never forged: a model wrote them, and they hold data the agent needs. A reminder
+  the app attaches to your message reaches the agent intact and does not count as your words.
+  Each decision is logged, without the prompt's text, to the debug log (`claude --debug`).
+- **Skips** slash commands and bash-mode lines.
   A transient API error is retried once; if the forge still fails, or a prompt is over 24,000
   characters, your text goes through as typed and a notice says so.
 

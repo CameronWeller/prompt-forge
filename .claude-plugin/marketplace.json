@@ -1,6 +1,6 @@
 {
   "name": "prompt-forge",
-  "description": "prompt-forge: forges loose prompts, agent briefs and goals into outcome-focused briefs for Claude Code.",
+  "description": "prompt-forge: forges your loose prompts and goals into outcome-focused briefs for Claude Code.",
   "owner": {
     "name": "Cameron Weller"
   },
@@ -8,13 +8,13 @@
     {
       "name": "prompt-forge",
       "source": "./",
-      "version": "0.3.1",
-      "description": "Forges the first prompt of a session, large prompts, large agent briefs and every /goal into an outcome-focused brief behind an isolated model call, so the agent never sees your loose wording."
+      "version": "0.4.0",
+      "description": "Forges the first prompt you send in a session, your large prompts and every /goal you set into an outcome-focused brief behind an isolated model call, so the agent never sees your loose wording."
     },
     {
       "name": "prompt-forge-view",
       "source": "./view",
-      "version": "0.3.1",
+      "version": "0.4.0",
       "description": "Shows prompt-forge's forged prompts in the chat, the desktop app included."
     }
   ]

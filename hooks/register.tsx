@@ -1,7 +1,7 @@
 import type { Register } from 'claude-code'
 
 // The primary agent never sees the raw prompt. A tool-less model call, isolated from the main
-// thread, forges it; only the forged brief reaches the primary agent (or the worker agent).
+// thread, forges it; only the forged brief reaches the primary agent.
 const MODEL = 'opus'
 const MAX_INPUT = 24_000
 const MIN_WORDS = 4
@@ -11,9 +11,19 @@ const words = (t: string) => t.split(/\s+/).filter(Boolean).length
 const HAS_OUTCOME = /^\s*OUTCOME:/m
 const RAW = /^raw:\s*/i
 const FORCE = /^forge:\s*/i
-// Prompts the harness builds (session briefs, forks, peer messages) carry rules that must reach the
-// agent intact, so they are never forged.
-const SYSTEM_WRAPPED = /<system-reminder>|<cross-session-message|<agent-message|<task-notification>/
+// Only what the person personally sends is forged. The engine stamps every prompt with its source,
+// so this reads that stamp, never the wording: `composer` is Enter at the prompt (the desktop app's
+// typed messages included), `bridge` Remote Control, `slack-ping` the owner on Slack. Everything
+// else (claude -p, the desktop app's own events, schedules, other sessions, subagents, plugins and
+// any turn the engine cannot name) goes through untouched, with no model call.
+const FROM_PERSON = new Set(['composer', 'bridge', 'slack-ping'])
+const fromPerson = (origin: any) => FROM_PERSON.has(origin?.kind)
+// The desktop app attaches reminders (linked-session status and the like) to a typed message. They
+// are not the person's words: the forge judges the rest, and they reach the agent intact.
+const REMINDER = /<system-reminder>[\s\S]*?<\/system-reminder>\s*/g
+const BASH_MODE = /^<bash-(?:input|stdout|stderr)>/
+// A line that reads as a slash command, so a prompt opening with a path (`/home/me/x is broken`) is forged.
+const SLASH = /^\/[\w:-]+(?:\s|$)/
 
 const FORGE_SYSTEM = [
   'You are the prompt forge: a guard against loose language. A person wrote the prompt below',
@@ -67,6 +77,23 @@ const FORGE_SYSTEM = [
   '  assumptions held, and what was learned that should adjust the plan or spec. Same language',
   '  as the input.',
 ].join('\n')
+
+// Typed prompts only: a simple request goes to the agent exactly as typed. The model judges
+// meaning and answers PASS; the code then sends the person's own words, so nothing can drift.
+const PASS = 'PASS'
+const GATE = [
+  'Gate, before anything else: if the prompt is simple, output exactly PASS and nothing else; the',
+  'person\'s words then go to the agent unchanged. Simple means ALL of these hold: it has one',
+  'plausible reading, with no unstated choice that changes the result (a direction, a unit, which',
+  'of several fields); its target is named or obvious; "done" is checkable without interpretation;',
+  'it has no vague qualifier ("better", "clean", "fast", "proper", "improve", or "fix" with no',
+  'stated symptom); it asks for one deliverable or is a question; and it asks for nothing',
+  'destructive, outward-facing, irreversible, costly or secret-touching. Judge by meaning, never',
+  'by length: a short prompt that carries a lot (a new capability, a design choice, a migration,',
+  'a policy) is not simple, and a long one (a pasted error and "what does this mean") can be.',
+  'When unsure, write the brief.',
+].join('\n')
+const FORGE_GATED = `${FORGE_SYSTEM}\n${GATE}`
 
 const GOAL_SYSTEM = [
   'You are the prompt forge, guarding against loose language in a GOAL. A person set the goal',
@@ -123,6 +150,11 @@ function later($: any, fn: () => unknown) {
   $.clock.after(1, () => { void Promise.resolve(fn()).catch(() => undefined) })
 }
 
+// One line per decision, in the debug log only (`claude --debug`): never the prompt's text.
+function decide($: any, what: string, origin: any) {
+  $.ui.log(`prompt-forge decision: ${what} origin=${origin?.kind ?? 'none'}`, { to: 'debug' })
+}
+
 // Exact tokens the brief must still contain: backticked spans, quoted strings, URLs, paths,
 // file names and identifiers with digits. Any the model dropped are appended verbatim.
 function anchors(raw: string): string[] {
@@ -145,8 +177,14 @@ function anchors(raw: string): string[] {
 async function forge($: any, raw: string, ms: number, system = FORGE_SYSTEM, needsOutcome = true) {
   const ask = () =>
     $.model.complete({ model: MODEL, system, prompt: raw, effort: 'high', maxTokens: 8000, timeoutMs: ms })
-  let r = await ask()
-  if (!r.isAnswered && r.reason === 'api-error') r = await ask() // one retry: a transient API error
+  let r
+  try {
+    r = await ask()
+    if (!r.isAnswered && r.reason === 'api-error') r = await ask() // one retry: a transient API error
+  } catch {
+    return { brief: undefined, why: 'model call failed' } // a held prompt must still go through
+  }
+  if (r.isAnswered && system === FORGE_GATED && r.text.trim() === PASS) return { brief: undefined, why: PASS }
   if (!r.isAnswered || (needsOutcome && !HAS_OUTCOME.test(r.text))) {
     return { brief: undefined, why: r.isAnswered ? 'malformed reply' : r.reason as string }
   }
@@ -159,38 +197,55 @@ async function forge($: any, raw: string, ms: number, system = FORGE_SYSTEM, nee
 }
 
 export const register: Register = on => {
-  // The user's prompt: forged for the session's first prompt (also after /clear and in every new
+  // The prompt you send: forged for the session's first prompt (also after /clear and in every new
   // chat), or when it is large. `forge:` forces a short one, `raw:` skips it; the prefix is removed.
   on('prompt.submit', async ($, e, next) => {
     if (e.command || e.isMeta) return next(e)
-    if ((e as any).origin?.kind === 'plugin' && (e as any).origin?.name === $.plugin.name) return next(e) // our own resend
-    const typed = e.text.trim()
-    if (typed === '' || typed.startsWith('/') || SYSTEM_WRAPPED.test(typed)) return next(e)
-    if (RAW.test(typed)) return next({ ...e, text: typed.replace(RAW, '') })
+    if (!fromPerson(e.origin)) {
+      decide($, 'skip (not sent by the person)', e.origin)
+      return next(e)
+    }
+    const reminders = e.text.match(REMINDER)?.join('') ?? ''
+    const typed = e.text.replace(REMINDER, '').trim()
+    if (typed === '' || SLASH.test(typed) || BASH_MODE.test(typed)) {
+      decide($, 'skip (nothing to forge)', e.origin)
+      return next(e)
+    }
+    if (RAW.test(typed)) {
+      decide($, 'skip (raw:)', e.origin)
+      return next({ ...e, text: reminders + typed.replace(RAW, '') })
+    }
     const text = typed.replace(FORCE, '')
+    const asTyped = text === typed ? e.text : reminders + text
     let isFirst = false
     try { isFirst = (await $.session.turns()) === 0 } catch { /* unknown: not first */ }
-    const isWorthIt =
-      FORCE.test(typed) || words(text) >= LARGE_WORDS || (isFirst && words(text) >= MIN_WORDS)
-    if (!isWorthIt) return next({ ...e, text })
-    // A plain `claude -p` run has no surface and ends with its one prompt: a held prompt would never
-    // be resent, so the agent would never run. Scheduled agents go through as typed.
-    let printRun = false
-    try { printRun = (await $.session.surfaces()).length === 0 } catch { /* unknown: not a print run */ }
-    if (printRun) return next({ ...e, text })
-    if (text.length > MAX_INPUT) {
-      later($, () => show($, `Not forged: your prompt is over ${MAX_INPUT.toLocaleString('en-US')} characters, so the agent received it as typed.`))
-      return next({ ...e, text })
+    const reason = FORCE.test(typed) ? 'forge:' : words(text) >= LARGE_WORDS ? 'large prompt' :
+      isFirst && words(text) >= MIN_WORDS ? 'first prompt' : undefined
+    if (reason === undefined) {
+      decide($, 'skip (small follow-up)', e.origin)
+      return next({ ...e, text: asTyped })
     }
+    if (text.length > MAX_INPUT) {
+      decide($, 'skip (too large)', e.origin)
+      later($, () => show($, `Not forged: your prompt is over ${MAX_INPUT.toLocaleString('en-US')} characters, so the agent received it as typed.`))
+      return next({ ...e, text: asTyped })
+    }
+    decide($, `forge (${reason})`, e.origin)
+    // `forge:` always briefs; otherwise a simple request passes through as typed.
+    const system = FORCE.test(typed) ? FORGE_SYSTEM : FORGE_GATED
     if (e.attachments !== undefined) {
       // A prompt with images is forged in place (a resend would lose them); the brief is shown after.
-      const { brief, why } = await forge($, text, 150_000)
+      const { brief, why } = await forge($, text, 150_000, system)
+      if (why === PASS) {
+        later($, () => show($, 'Not forged: a simple, clear request. The agent received your prompt as typed.'))
+        return next({ ...e, text: asTyped })
+      }
       if (brief === undefined) {
         later($, () => show($, `Not forged (${why}). The agent received your prompt as typed.`))
-        return next({ ...e, text })
+        return next({ ...e, text: asTyped })
       }
       later($, () => show($, `Forged prompt the agent received:\n\n${brief}`))
-      return next({ ...e, text: brief })
+      return next({ ...e, text: reminders + brief })
     }
     // Hold your prompt. Outside the hook: say it is forging, forge, show the forged prompt as its
     // own chat row (the desktop app draws command output), then send it. Your words stay in the
@@ -198,47 +253,35 @@ export const register: Register = on => {
     await notice($, 'your original prompt', text)
     later($, async () => {
       await show($, 'Forging your prompt…')
-      const { brief, why } = await forge($, text, 150_000)
+      const { brief, why } = await forge($, text, 150_000, system)
+      if (why === PASS) {
+        await show($, 'Not forged: a simple, clear request. The agent receives your prompt as typed.')
+        await resend($, asTyped)
+        return
+      }
       if (brief === undefined) {
         await show($, `Not forged (${why}). The agent receives your prompt as typed.`)
-        await resend($, text)
+        await resend($, asTyped)
         return
       }
       await show($, `Forged prompt the agent receives:\n\n${brief}`)
-      await resend($, brief, text)
+      await resend($, reminders + brief, asTyped)
     })
     return { drop: 'prompt-forge: forging your prompt; the forged version follows.' }
-  }).catch(($, e, next) => next(e))
-
-  // Large agent briefs (Agent tool, workflow agent(), teammates): the agent receives only the
-  // forged brief. Small briefs, forks, resumes and briefs already starting `OUTCOME:` pass through.
-  on('agent.spawn', async ($, e, next) => {
-    const raw = e.prompt
-    if (e.resume || e.fork || words(raw) < LARGE_WORDS || HAS_OUTCOME.test(raw)) return next(e)
-    if (raw.length > MAX_INPUT) {
-      await notice($, 'agent brief not forged', `The brief is over ${MAX_INPUT.toLocaleString('en-US')} characters, so the agent received it as written.`)
-      return next(e)
-    }
-    $.ui.status('prompt-forge: forging an agent brief…')
-    const { brief, why } = await forge($, raw, 180_000)
-    $.ui.status(undefined)
-    if (brief === undefined) {
-      $.ui.toast(`prompt-forge: agent brief not forged (${why}); raw prompt used`)
-      await notice($, 'agent brief not forged', `No brief was made (${why}); the agent received the prompt as written.`)
-      return next(e)
-    }
-    await notice($, `forged brief sent to agent "${e.description}"`, brief)
-    later($, () => show($, `Forged brief sent to agent "${e.description}":\n\n${brief}`))
-    return next({ ...e, prompt: brief })
   }).catch(($, e, next) => next(e))
 
   // Goals you set with /goal: always forged (they steer a whole run and a separate evaluator
   // judges them), into a verifiable completion condition. `clear`/status-style args and `raw:` pass.
   on('command.run', { command: 'goal' }, async ($, e, next) => {
+    if (!fromPerson(e.origin)) {
+      decide($, 'skip goal (not set by the person)', e.origin)
+      return next(e)
+    }
     const typed = e.args.trim()
     if (typed === '' || typed.startsWith('-') || /^(clear|off|none|status|show|pause|resume)$/i.test(typed)) return next(e)
     if (RAW.test(typed)) return next({ ...e, args: typed.replace(RAW, '') })
     if (typed.length > MAX_INPUT) return next(e)
+    decide($, 'forge goal', e.origin)
     $.ui.status('prompt-forge: forging this goal…')
     const { brief, why } = await forge($, typed, 150_000, GOAL_SYSTEM, false)
     $.ui.status(undefined)

@@ -1,15 +1,19 @@
 ---
 name: prompt-forge
-description: Manual reference for the prompt-forge mod, which forges the first prompt of a session, large prompts, large agent briefs and every /goal into outcome-focused briefs behind an isolated model call. Built on Felix Rieseberg's "How to be more ambitious", the Karpathy guidelines and the BMad Method.
+description: Manual reference for the prompt-forge mod, which forges the first prompt of a session, large prompts and every /goal you send into outcome-focused briefs behind an isolated model call. Built on Felix Rieseberg's "How to be more ambitious", the Karpathy guidelines and the BMad Method.
 disable-model-invocation: true
 ---
 
 # Prompt forge
 
-Applies when it matters most, not to every prompt: the **first prompt of a session**, any
-**large prompt** (50+ words), and any **large agent brief**, and **every goal you set with `/goal`**. Do the forge first, then
-act. Everything else runs as typed, with no delay. In a prompt you type: start it with
-`forge:` to force the forge on a short one, or `raw:` to skip it (the prefix is removed).
+Applies when it matters most, and only to what you personally send: the **first prompt of a
+session**, any **large prompt** (50+ words), and **every goal you set with `/goal`**. Do the forge
+first, then act. Everything else runs as typed, with no delay. In a prompt you type: start it with
+`forge:` to force a full brief, or `raw:` to skip the forge (the prefix is removed). A typed prompt
+that is already simple and clear passes through exactly as typed: one plausible reading, a named
+or obvious target, a checkable "done", no vague qualifier, one deliverable or a question, and
+nothing destructive, outward-facing, irreversible, costly or secret-touching. Judge by meaning,
+never length; when unsure, write the brief.
 
 Sources: felixrieseberg.com/how-to-be-more-ambitious-a-tutorial-for-humans-with-models supplies the
 structure (Altitude, Depth, Range). The Karpathy guidelines (github.com/multica-ai/andrej-karpathy-skills,
@@ -59,22 +63,20 @@ MIT) and the BMad Method (github.com/bmad-code-org/BMAD-METHOD, MIT) are folded 
 ## What the mod does (isolated from the primary agent)
 
 The raw prompt goes to a tool-less Opus call that has no history and no tools. The primary
-agent (or worker agent) receives **only the forged brief**, never the raw text and never this
+agent receives **only the forged brief**, never the raw text and never this
 skill (it is hidden from the model; `/prompt-forge` is for you).
 
 - **User prompts:** forged on the first prompt of every session (also after `/clear`, so every
-  new chat) and on any prompt of 50+ words. Your prompt is held; the chat shows "Forging your prompt…", then the full forged prompt (printed by the companion plugin `prompt-forge-view`, since the desktop app draws command output but not plugin notices), then the brief is sent as the next message; your original wording stays in the record as a notice the model never reads. Prompts with images are rewritten in place instead. Agent briefs get a notice with the forged brief. Prompts the harness wraps in `<system-reminder>` and similar tags (session briefs, forks, peer messages) are never forged. A status line shows "forging…"
+  new chat) and on any prompt of 50+ words. Your prompt is held; the chat shows "Forging your prompt…", then the full forged prompt (printed by the companion plugin `prompt-forge-view`, since the desktop app draws command output but not plugin notices), then the brief is sent as the next message; your original wording stays in the record as a notice the model never reads. Prompts with images are rewritten in place instead. Only prompts the engine stamps as yours are forged (typed at the prompt, the desktop app included; Remote Control; Slack): `claude -p` runs, the app's own events, schedules, task notices, other sessions and plugins pass untouched with no model call. A `<system-reminder>` the app attaches to your message reaches the agent intact and is not counted as your words. A status line shows "forging…"
   while it runs (up to a minute or two). Skipped: slash commands, first prompts under four words, prompts over 24k
-  characters. `forge:` forces a short prompt, `raw:` skips the forge (prefix removed). A plain `claude -p` run
-  (a scheduled agent) goes through as typed: it ends with its one prompt, so a held prompt would never run.
+  characters, bash-mode lines. A simple, clear request (the forge answers PASS) shows "Not forged: a simple, clear
+  request" and is sent exactly as typed. `forge:` forces a full brief, `raw:` skips the forge (prefix removed).
 - **Goals (`/goal <text>`):** always forged, whatever the size, into one verifiable completion
   condition of whatever length the goal is worth (the evaluator checks it against the conversation): an
   outcome to reach and keep, vague words turned into thresholds, the proving evidence named
   (command and exit code, test result, measured number). `Goal set:` shows the
   condition. `/goal clear` and the like pass through; `raw:` sets your wording as typed.
-- **Large agent briefs** (Agent tool, workflow `agent()`, teammates): rewritten the same way
-  before the agent starts. Skipped: small briefs, forks, resumes, and briefs that already
-  contain a line starting `OUTCOME:`.
+- **Agent briefs are never forged:** a model wrote them, and they hold data the agent needs.
 - **Extrapolates, not just rewrites:** the forger acts as a guard against loose language. It infers
   the intended outcome, turns vague words into checkable criteria, fills gaps and adds implied
   requirements, and lists everything it inferred under `ASSUMPTIONS:` so stated and inferred stay
