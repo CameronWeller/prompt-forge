@@ -2,7 +2,7 @@ name: Build Prompt Forge backend
 on:
   push:
     branches: [codex-strict-submit]
-    paths: ['codex/backend/**', '.github/workflows/forge-backend.yml']
+    paths: ['codex/backend/prompt_forge.rs', 'codex/backend/apply.py', '.github/workflows/forge-backend.yml']
   workflow_dispatch:
 permissions:
   contents: read

@@ -23,7 +23,11 @@ def main():
                 if time.monotonic() >= deadline:
                     raise RuntimeError("Shared socket did not become ready")
                 time.sleep(0.05)
-            arguments = ["app-server", "proxy", "--sock", str(root / "shared.sock")]
+            # The upstream `app-server proxy` relays raw socket bytes. The Unix
+            # endpoint is WebSocket/HTTP, whereas desktop SSH startup uses JSONL.
+            from socket_bridge import run
+            run(root / "shared.sock")
+            return
     os.execv(str(binary), [str(binary), *arguments])
 
 

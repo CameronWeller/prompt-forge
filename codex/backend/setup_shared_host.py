@@ -14,6 +14,9 @@ def main():
     proof = json.loads((ROOT / "smoke-verified.json").read_text(encoding="utf-8"))
     if proof["sha256"] != hashlib.file_digest(binary.open("rb"), "sha256").hexdigest():
         raise SystemExit("Verify this backend before creating the shared runtime")
+    # The Unix transport rejects a directory whose entries other users can replace.
+    # A user's default umask may otherwise make this installation group-writable.
+    ROOT.chmod(0o700)
     unit = Path.home() / ".config/systemd/user/prompt-forge-app-server.service"
     if unit.exists() and "Description=Prompt Forge shared Codex backend" not in unit.read_text():
         raise SystemExit("An unrelated shared service already exists")

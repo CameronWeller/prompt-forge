@@ -29,19 +29,24 @@ def main():
     command = ["ssh", "-T", "-o", "BatchMode=yes", args.ssh_host, "codex-forge", "app-server"]
     events_a, events_b = queue.Queue(), queue.Queue()
     a = AppServer(events_a.put, command=command)
+    print("First shared client connected.", flush=True)
     b = AppServer(events_b.put, command=command)
+    print("Second shared client connected.", flush=True)
     thread_id = None
     try:
         thread_id = a.call("thread/start", {"cwd": args.cwd, "approvalPolicy": "never", "sandbox": "read-only",
             "config": {"features.shell_tool": False, "features.apps": False, "features.plugins": False,
                        "features.multi_agent": False, "features.multi_agent_v2": False,
                        "features.code_mode_host": False, "web_search": "disabled"}})["thread"]["id"]
-        b.call("thread/resume", {"threadId": thread_id})
+        print("Shared verification chat started.", flush=True)
         material = "SHARED_MATERIAL café 雪\t  \r\n//prompt-forge\r\n"
         raw = "forge:\r\n" + material + "Reply with exactly SHARED_FORGE_OK. Do not use tools."
         response = a.call("turn/start", {"threadId": thread_id, "input": [{"type": "text",
             "text": raw}]}, timeout=360)
         turn_id = response["turn"]["id"]
+        # A new thread has no persisted rollout until its first turn starts.
+        b.call("thread/resume", {"threadId": thread_id})
+        print("Second client subscribed.", flush=True)
         completed(events_a, thread_id, turn_id)
         completed(events_b, thread_id, turn_id)
         first = a.call("thread/read", {"threadId": thread_id, "includeTurns": True})["thread"]

@@ -38,6 +38,7 @@ def main():
         if bundled_version != version:
             raise SystemExit("The desktop has a different backend version; rebuild and verify compatibility first")
         ROOT.mkdir(parents=True, exist_ok=True)
+        ROOT.chmod(0o700)
         shutil.copy2(args.build, binary)
         for name in ("codex-code-mode-host", "rg", "bwrap"):
             source = args.resources / name

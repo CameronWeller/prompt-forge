@@ -65,8 +65,17 @@ per-user service and `codex-forge` SSH command. `install_linux.py activate --sha
 selects its private socket bridge for the Linux desktop. Windows activation selects
 the same bare command name: locally it runs the Windows backend, while the desktop's
 SSH connection resolves it on the Linux host. Select that host for shared chats.
+On Windows, `codex-forge.exe` is the verified native executable itself, next to
+its helpers and settings; its directory is added to the user's PATH. No extra
+locally compiled launcher is required.
 `verify_shared.py` checks that two SSH clients receive the same live completion and
 history. Existing chats on separate hosts are not automatically merged.
+
+The private Unix endpoint speaks WebSocket. `socket_bridge.py` adapts the desktop's
+JSONL stdio transport, including masked client frames, fragmented server messages,
+and ping/pong. It never listens on a public TCP port. If small SSH commands work
+but larger responses stall over ZeroTier, check the tunnel MTU before diagnosing
+the app-server; a smaller interface MTU can resolve packet-size black holes.
 
 `install.py restore` and `install_linux.py restore` restore the previous desktop
 selection. The Linux shared service is separately stopped with

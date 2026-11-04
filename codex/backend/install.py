@@ -16,21 +16,21 @@ def write_json(path, value):
     path.write_text(json.dumps(value, indent=2), encoding="utf-8")
 
 
-def environment(value):
+def environment(value, name="CODEX_CLI_PATH"):
     import winreg
     with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment", 0,
                        winreg.KEY_READ | winreg.KEY_WRITE) as key:
         try:
-            previous, kind = winreg.QueryValueEx(key, "CODEX_CLI_PATH")
+            previous, kind = winreg.QueryValueEx(key, name)
         except FileNotFoundError:
             previous, kind = None, winreg.REG_SZ
         if value is None:
             try:
-                winreg.DeleteValue(key, "CODEX_CLI_PATH")
+                winreg.DeleteValue(key, name)
             except FileNotFoundError:
                 pass
         else:
-            winreg.SetValueEx(key, "CODEX_CLI_PATH", 0, kind, value)
+            winreg.SetValueEx(key, name, 0, kind, value)
     result = ctypes.c_size_t()
     ctypes.windll.user32.SendMessageTimeoutW(0xFFFF, 0x001A, 0, "Environment", 2, 2000, ctypes.byref(result))
     return previous
@@ -79,10 +79,15 @@ def main():
         if launcher.exists():
             if not marker.exists() or json.loads(marker.read_text())["sha256"] != hashlib.file_digest(launcher.open("rb"), "sha256").hexdigest():
                 raise SystemExit("An unrelated codex-forge.exe already exists")
-        compiler = Path(os.environ["WINDIR"]) / "Microsoft.NET/Framework64/v4.0.30319/csc.exe"
-        subprocess.run([str(compiler), "/nologo", "/target:exe", "/out:" + str(launcher),
-                        str(ROOT / "codex/backend/BackendLauncher.cs")], check=True)
-        write_json(marker, {"sha256": hashlib.file_digest(launcher.open("rb"), "sha256").hexdigest()})
+            # Remove only our identified legacy launcher. Windows Application
+            # Control may reject that locally compiled helper. The verified
+            # native backend can serve as the entry point directly.
+            launcher.unlink()
+            marker.unlink()
+        entry = ROOT / "codex-forge.exe"
+        if entry.exists():
+            entry.unlink()
+        os.link(binary, entry)
         print(f"Staged native backend: {binary}")
         print("The app backend selection has not changed. Run the smoke verification before activation.")
     elif args.action == "activate":
@@ -93,12 +98,21 @@ def main():
         if proof["sha256"] != hashlib.file_digest(binary.open("rb"), "sha256").hexdigest():
             raise SystemExit("Backend binary changed since verification")
         previous = environment("codex-forge")
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment") as key:
+            user_path, _ = winreg.QueryValueEx(key, "Path")
+        if str(ROOT).lower() not in [p.lower().rstrip("\\") for p in user_path.split(";")]:
+            environment(str(ROOT) + ";" + user_path, "Path")
         if not rollback.exists():
             write_json(rollback, {"CODEX_CLI_PATH": previous})
         print("Prompt Forge selected for the next complete Codex desktop restart.")
     else:
         previous = json.loads(rollback.read_text(encoding="utf-8"))["CODEX_CLI_PATH"]
         environment(previous)
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment") as key:
+            user_path, _ = winreg.QueryValueEx(key, "Path")
+        environment(";".join(p for p in user_path.split(";") if p.lower().rstrip("\\") != str(ROOT).lower()), "Path")
         print("Previous backend selection restored. Restart Codex desktop to use it.")
 
 
