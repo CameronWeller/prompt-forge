@@ -8,12 +8,19 @@ import threading
 
 
 class AppServer:
-    def __init__(self, on_event, binary=None, command=None):
+    def __init__(self, on_event, binary=None, command=None, clean_runtime_env=False):
         binary = binary or shutil.which('codex.exe' if os.name == 'nt' else 'codex')
         if not binary and not command:
             raise RuntimeError('Codex CLI is not installed or is not on PATH.')
         env = os.environ.copy()
         env.pop('CODEX_THREAD_ID', None)
+        if clean_runtime_env:
+            # Match the desktop's alternate-backend launch, rather than inheriting
+            # the running app's registered-core identity or original CLI path.
+            for key in ('CODEX_CLI_PATH', 'CODEX_APP_RUNTIME_CLI_PATH',
+                        'CODEX_WINDOWS_REGISTERED_CORE', 'CODEX_WINDOWS_SANDBOX_PACKAGE_FAMILY'):
+                env.pop(key, None)
+            env['CODEX_INTERNAL_APP_SERVER_REMOTE_CONTROL_DISABLED'] = '1'
         self.process = subprocess.Popen(command or [binary, 'app-server', '--listen', 'stdio://'],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
             text=True, encoding='utf-8', bufsize=1, env=env,
@@ -75,8 +82,18 @@ class AppServer:
 
     def close(self):
         if self.process.poll() is None:
-            self.process.terminate()
+            # EOF lets app-server release its tool processes and file watchers.
+            # A hard kill first can leave a Windows workspace locked by children.
             try:
-                self.process.wait(timeout=5)
+                self.process.stdin.close()
+            except (OSError, ValueError):
+                pass
+            try:
+                self.process.wait(timeout=10)
             except subprocess.TimeoutExpired:
-                self.process.kill()
+                self.process.terminate()
+                try:
+                    self.process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    self.process.kill()
+                    self.process.wait(timeout=5)
