@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           repository: openai/codex
-          ref: a956835d020762cb2b570053af06f643a11c0ecc
+          ref: 4f093f2748667f3b0e6a07e3d4055121cbd3ce64
           persist-credentials: false
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
@@ -49,7 +49,7 @@ jobs:
         run: cargo test --locked --release --target x86_64-pc-windows-msvc -p codex-app-server --lib prompt_forge::tests
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
         with:
-          name: prompt-forge-codex-0.160.0-windows-x64
+          name: prompt-forge-codex-0.166.0-alpha.6-windows-x64
           path: codex-rs/target/x86_64-pc-windows-msvc/release/codex.exe
           if-no-files-found: error
           retention-days: 30

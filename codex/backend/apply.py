@@ -4,11 +4,11 @@ import shutil
 import subprocess
 import sys
 
-REVISION = "a956835d020762cb2b570053af06f643a11c0ecc"
+REVISION = "4f093f2748667f3b0e6a07e3d4055121cbd3ce64"
 root = pathlib.Path(sys.argv[1]).resolve()
 actual = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
 if actual != REVISION:
-    raise SystemExit(f"Expected Codex 0.160.0 ({REVISION}), got {actual}")
+    raise SystemExit(f"Expected Codex 0.166.0-alpha.6 ({REVISION}), got {actual}")
 
 def edit(relative, old, new):
     path = root / relative
