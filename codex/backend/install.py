@@ -53,6 +53,9 @@ def main():
         version = subprocess.check_output([str(args.build), "--version"], text=True).strip()
         if version != "codex-cli " + VERSION:
             raise SystemExit("Backend build does not match the installed desktop version")
+        bundled_version = subprocess.check_output([str(args.resources / "codex.exe"), "--version"], text=True).strip()
+        if bundled_version != version:
+            raise SystemExit("The desktop has a different backend version; rebuild and verify compatibility first")
         ROOT.mkdir(parents=True, exist_ok=True)
         shutil.copy2(args.build, binary)
         for name in ("codex-code-mode-host.exe", "codex-command-runner.exe",

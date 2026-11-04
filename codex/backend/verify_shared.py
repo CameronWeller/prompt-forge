@@ -37,8 +37,10 @@ def main():
                        "features.multi_agent": False, "features.multi_agent_v2": False,
                        "features.code_mode_host": False, "web_search": "disabled"}})["thread"]["id"]
         b.call("thread/resume", {"threadId": thread_id})
+        material = "SHARED_MATERIAL café 雪\t  \r\n//prompt-forge\r\n"
+        raw = "forge:\r\n" + material + "Reply with exactly SHARED_FORGE_OK. Do not use tools."
         response = a.call("turn/start", {"threadId": thread_id, "input": [{"type": "text",
-            "text": "raw: Reply with exactly SHARED_FORGE_OK. Do not use tools."}]}, timeout=60)
+            "text": raw}]}, timeout=360)
         turn_id = response["turn"]["id"]
         completed(events_a, thread_id, turn_id)
         completed(events_b, thread_id, turn_id)
@@ -49,8 +51,11 @@ def main():
         assert any(item.get("text", "").strip() == "SHARED_FORGE_OK" for item in items if item["type"] == "agentMessage")
         users = [item for item in items if item["type"] == "userMessage"]
         text = "\n".join(part["text"] for part in users[0]["content"] if part["type"] == "text")
-        assert text.startswith("Reply with exactly"), "The raw control prefix was not processed"
-        print(json.dumps({"shared_live_events": True, "shared_history": True, "preprocessing_active": True,
+        assert text.startswith("GIVEN:"), "Shared worker received an unforged draft"
+        assert text.endswith(material), "Shared material was not preserved verbatim"
+        assert raw not in json.dumps(second, ensure_ascii=False), "Raw draft entered shared worker history"
+        print(json.dumps({"shared_live_events": True, "shared_history": True, "isolated_forge": True,
+                          "verbatim_material": True,
                           "thread_id": thread_id}))
     finally:
         if thread_id:

@@ -28,6 +28,7 @@ def main():
                 "cwd": workspace, "approvalPolicy": "never", "sandbox": "read-only",
                 "config": {"features.shell_tool": False, "features.apps": False,
                            "features.plugins": False, "features.multi_agent": False,
+                           "features.multi_agent_v2": False,
                            "features.code_mode_host": False, "web_search": "disabled"},
             })["thread"]["id"]
             material = "NATIVE_MATERIAL café 雪\t  \r\n//prompt-forge\r\n"

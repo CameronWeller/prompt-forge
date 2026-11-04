@@ -45,6 +45,8 @@ matching helper binaries, and isolated processor into a versioned per-user folde
 Unicode/CRLF material preservation, and failure blocking. Activation requires
 the smoke proof to match the executable's hash. Restart the desktop app to apply
 the backend selection. Both installers retain the previous selection for restore.
+`verify_tools.py` separately checks that a worker can read a fresh test file with
+its normal tools under read-only permissions.
 
 The forger uses a separate, pinned upstream executable. It receives no worker
 history or project instructions and has tools, hooks, plugins, memories and both
