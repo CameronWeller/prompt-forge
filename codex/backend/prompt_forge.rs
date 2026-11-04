@@ -89,7 +89,9 @@ pub(crate) async fn input(
     trigger: Option<&str>,
 ) -> Result<(), JSONRPCErrorError> {
     // Internal continuations and tool results are not human drafts.
-    if trigger.is_some_and(|trigger| trigger != "user") { return Ok(()); }
+    if trigger.is_some_and(|trigger| !matches!(trigger,
+        "user" | "edit_user_message" | "notification_reply" | "scheduled_task_reply"
+    )) { return Ok(()); }
     let original = joined_text(input);
     if original.is_empty() { return Ok(()); }
     let first = thread.conversation_history_snapshot().await.user_message_revision() == 0;

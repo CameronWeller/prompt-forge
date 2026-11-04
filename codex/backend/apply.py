@@ -3,12 +3,33 @@ import pathlib
 import shutil
 import subprocess
 import sys
+import re
+import tomllib
 
 REVISION = "4f093f2748667f3b0e6a07e3d4055121cbd3ce64"
 root = pathlib.Path(sys.argv[1]).resolve()
 actual = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
 if actual != REVISION:
     raise SystemExit(f"Expected Codex 0.166.0-alpha.6 ({REVISION}), got {actual}")
+
+# Upstream release tags stamp the workspace version but leave 0.0.0 for path
+# packages in Cargo.lock. Update those exact local packages without resolving or
+# changing any registry/git dependency. Cargo --locked checks the result in CI.
+workspace = root / "codex-rs"
+version = tomllib.loads((workspace / "Cargo.toml").read_text(encoding="utf-8"))["workspace"]["package"]["version"]
+local_names = set()
+for manifest in workspace.rglob("Cargo.toml"):
+    package = tomllib.loads(manifest.read_text(encoding="utf-8")).get("package", {})
+    if isinstance(package.get("version"), dict) and package["version"].get("workspace"):
+        local_names.add(package["name"])
+lock_path = workspace / "Cargo.lock"
+lock = lock_path.read_text(encoding="utf-8")
+parts = lock.split("[[package]]")
+for index, part in enumerate(parts[1:], start=1):
+    name = re.search(r'^name = "([^"]+)"', part, re.M)
+    if name and name[1] in local_names and not re.search(r"^source =", part, re.M):
+        parts[index] = re.sub(r'^version = "[^"]+"', f'version = "{version}"', part, count=1, flags=re.M)
+lock_path.write_text("[[package]]".join(parts), encoding="utf-8", newline="\n")
 
 def edit(relative, old, new):
     path = root / relative
