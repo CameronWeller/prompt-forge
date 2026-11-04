@@ -28,8 +28,12 @@ MIT) and the BMad Method (github.com/bmad-code-org/BMAD-METHOD, MIT) are folded 
 - **Never widen authority.** Nothing destructive, outward-facing, irreversible, costly or
   secret-touching that the input did not authorize; approval-gated actions stay confirm-first.
   Project rules (CLAUDE.md, AGENTS.md) win.
+- **Keep material whole.** The agent never sees the input, so GIVEN quotes in full what it must work
+  from. Text above a `//PROMPT FORGE:` line reaches the agent byte for byte, after the brief.
 
 **Altitude (the purpose)**
+- **Start from what is given.** GIVEN states the exact starting state and materials, then the job in
+  one sentence.
 - **Verbs, not nouns, first.** Rewrite each deliverable as the job it does ("a deck" -> "get busy
   people to believe a cause-and-effect story and decide under uncertainty in 30 minutes"), then
   extrapolate from the verbs.
@@ -38,16 +42,31 @@ MIT) and the BMad Method (github.com/bmad-code-org/BMAD-METHOD, MIT) are folded 
   Creative work: hold the intent, don't inflate it.
 - **Vague words become checkable criteria.** Solutions beyond the literal ask are welcome and
   listed in ASSUMPTIONS.
+- **Say what counts.** SCOPE gives examples in and out of scope, names the tempting shortcuts that
+  satisfy the words and miss the purpose, and marks limits that tooling enforces or could.
 - **Right-sized track:** Clarify a vague notion, Plan a big clear idea, or Build-and-verify a small
   clear change; record decisions where they outlive the chat (spec, PRD, ADR, `_bmad/`, PR).
 
 **Depth (work like a field-leading expert)**
 - What would a field-leading professional do that the prompt does not ask for?
+- RESOURCES inventories the tools, data, schemas and hard limits the input gives. Costly runs get a
+  finite budget, marked "(inferred)", to plan before spending.
 - Start from the rawest material (in existing code, what is actually there) and use the field's
   real tools, not a markdown table of opinions.
 - DO is numbered steps, each `-> verify: <check>` ("fix the bug" -> "write a failing test, make it pass").
 - Challenge the stated assumptions against raw data where cheap.
+- **Diagnose first:** categorize failures, read raw failing examples, go after the largest category
+  you can explain.
+- **Show cause:** correlation is not enough. Name the confound and show that changing the suspected
+  cause changes the behaviour as predicted, at several strengths where that applies.
+- **Long work:** state each step's hypothesis, print compact summaries, keep notes that survive a
+  restart, keep copies of the best result, and warn about output that could get a session refused.
 - VERIFY names a judge other than the model and a specific hard goal ("200 ms", not "faster").
+- **Measurable outcomes:** fix the protocol first; compare against an unchanged baseline on the same
+  items; confirm on held-out items; state the standard error and the smallest effect that counts; use
+  cheap dense signals beside costly ones. Name the proxy that could mislead, and judge by the outcome.
+- BOUNDS is written as `Not allowed:` and `Allowed:` lists.
+- Leave out whatever does not apply rather than padding it.
 
 **Range (draw on several fields)**
 - CREW draws widely: product, architecture, UX, design, development, testing, security, data and
@@ -57,7 +76,10 @@ MIT) and the BMad Method (github.com/bmad-code-org/BMAD-METHOD, MIT) are folded 
   that role does, never role-play.
 
 **Report**
-- What was done, what was skipped and why, which assumptions held, and what should adjust the
+- How the work runs and ends: when it is finished, what gets handed over, and any exact reply format.
+- With several steps, a few plain sentences before each: what the last result showed, what it
+  concludes, what comes next and why, and what would confirm or refute the hypothesis.
+- At the end: what was done, what was skipped and why, which assumptions held, and what should adjust the
   plan or spec.
 
 ## What the mod does (isolated from the primary agent)
@@ -89,13 +111,16 @@ skill (it is hidden from the model; `/prompt-forge` is for you).
   prompt is over 24,000 characters, the raw prompt goes through and a notice says so.
 
 ```
+GIVEN: <exact starting state and materials, then the job in one sentence>
 OUTCOME: <state of the world to achieve, as a verb phrase>
 WHY: <the goal beyond the goal; what the result unblocks>
 TRACK: <Clarify | Plan | Build-and-verify, why, and where decisions are recorded>
+SCOPE: <what counts, what does not, tempting shortcuts, limits tooling enforces>
+RESOURCES: <tools, data, schemas, hard limits, a finite budget where runs are costly>
 DO: <verbs a top practitioner would do, with rawest inputs and real tools/paths>
 CREW: <disciplines/adversary to apply, as actions>
 VERIFY: <outside check: command, test, data, independent reviewer; exit codes expected>
-BOUNDS: <scope limits, forbidden actions, risk tier, files not to touch>
+BOUNDS: <Not allowed and Allowed lists: limits, risk tier, files not to touch>
 ASSUMPTIONS: <what was inferred rather than stated; report where one proved wrong>
 REPORT: <what to return, how short; what was skipped and why>
 ```

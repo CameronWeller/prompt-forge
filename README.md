@@ -7,7 +7,7 @@ you set), your text goes to an isolated, tool-less Opus call that extrapolates w
 The agent receives only the forged brief:
 
 ```
-OUTCOME / WHY / TRACK / DO / CREW / VERIFY / BOUNDS / ASSUMPTIONS / REPORT
+GIVEN / OUTCOME / WHY / TRACK / SCOPE / RESOURCES / DO / CREW / VERIFY / BOUNDS / ASSUMPTIONS / REPORT
 ```
 
 Everything else runs as typed, with no delay.
@@ -65,6 +65,8 @@ library copy loads as a session-only plugin and shadows the installed one.
   `prompt-forge-view`). Failures show "Not forged (reason)".
   Your original wording stays in the record as a notice the model never reads. Prompts with
   images are rewritten in place instead.
+- **Your material stays whole:** everything above a line starting `//PROMPT FORGE:` reaches the agent
+  byte for byte, after the brief. Without that line, the forge is told to quote material in full.
 - **Simple requests pass:** the chat shows "Not forged: a simple, clear request" and the agent
   receives your exact words. When unsure, the forge writes the brief.
 - **Overrides:** start a prompt with `forge:` to force a full brief (even for a simple one), or
@@ -93,6 +95,12 @@ outside verification) and **Range** (a wide crew plus an adversary). Folded into
   never pick silently between readings, ask first when it matters, every step verified.
 - **BMad Method** ([bmad-code-org/BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD), MIT):
   a right-sized Clarify, Plan or Build-and-verify track, decisions recorded durably, learn and adjust.
+
+- **A research-grade exemplar prompt:** the starting state and materials up front, what counts and the
+  tempting shortcuts that do not, an inventory of resources and a finite budget, diagnosing failures
+  before fixing them, showing cause rather than correlation, a fixed measurement protocol against a
+  baseline on held-out items, naming the proxy that can mislead, explicit Allowed and Not allowed
+  lists, working habits that survive a restart, and a short explanation before each step.
 
 The brief does not cap the size of the work: solutions beyond the literal ask are welcome, and are
 labelled under `ASSUMPTIONS` so your words and the forge's additions stay apart.

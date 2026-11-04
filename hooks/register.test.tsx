@@ -192,3 +192,23 @@ test('if the forge call throws, the prompt still goes through, without its prefi
   await submit($, `forge: ${ORIGINAL}`, COMPOSER, { attachments: [] })
   expect(sent).toEqual([ORIGINAL])
 })
+
+test('text above a //PROMPT FORGE: line reaches the agent byte for byte, and only the request is checked for tokens', async ($, on) => {
+  const MATERIAL = 'TASK. Read /practice/a.jsonl and   keep   this spacing.\n//PROMPT FORGE: DO NOT EDIT ANYTHING ABOVE THIS LINE.'
+  const sent: string[] = []
+  const prompts: string[] = []
+  stubs(on, [], (_: any, e: any) => (prompts.push(e.prompt), { value: { isAnswered: true, text: BRIEF } }), sent)
+  await submit($, `${MATERIAL}\nuse it as a model for /work/new.md`, COMPOSER, { attachments: [] })
+  expect(prompts[0]).toContain(MATERIAL)
+  expect(sent[0]).toContain(`unchanged; do not edit it):\n${MATERIAL}`)
+  const kept = sent[0].slice(0, sent[0].indexOf('MATERIAL ('))
+  expect(kept).toContain('- /work/new.md')
+  expect(kept).not.toContain('/practice/a.jsonl')
+})
+
+test('a prompt with no marker carries no MATERIAL section', async ($, on) => {
+  const sent: string[] = []
+  stubs(on, [], undefined, sent)
+  await submit($, ORIGINAL, COMPOSER, { attachments: [] })
+  expect(sent).toEqual([BRIEF])
+})
