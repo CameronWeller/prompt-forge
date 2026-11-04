@@ -19,6 +19,69 @@ carries a lot ("add multi-tenant support", "push to prod") still gets a full bri
 
 ## Install
 
+### Codex (strict external submission)
+
+The Codex port lives in [`codex/`](codex/). It runs an isolated, ephemeral Codex
+forge call **before** starting the working agent. The raw request is not submitted
+to that agent. This is a separate terminal command, not an automatic desktop or
+cloud-composer hook; native Codex hooks cannot replace the submitted user prompt.
+
+Requires Python 3.11+, a current Codex CLI (`0.160.0` tested), and `codex login`.
+Install on Windows, macOS, or Linux:
+
+```sh
+python codex/install.py
+# For a reviewed update: python codex/install.py --update
+```
+
+Open a new terminal with `~/.local/bin` on PATH (the Windows installer updates the
+user PATH). The installed skill helps explain and maintain the command; invoking
+the skill inside an existing chat cannot retroactively hide its raw prompt.
+
+```sh
+prompt-forge preview --file task.txt --output forged.txt
+prompt-forge local --file task.txt --cwd /path/to/project
+prompt-forge cloud --file task.txt --env YOUR_CLOUD_ENVIRONMENT_ID --branch main
+```
+
+The cloud command uses `codex cloud exec`. Supply an environment ID accepted by
+that CLI service. Desktop Codex Cloud saved-configuration IDs are not assumed to
+be interchangeable with CLI environment IDs. For cloud surfaces that do not accept
+CLI submission, use preview and submit **only the generated output** in the cloud
+composer. This does not install anything into cloud orchestrators or intercept
+future messages typed directly in local, web, or mobile chats.
+
+Keep raw material above a marker and the task below it:
+
+```text
+Exact source text, logs, or code — spaces and line endings are retained.
+//prompt-forge
+Explain what this material shows and identify the next check to run.
+```
+
+`//PROMPT FORGE:` also works. Everything through the marker line is appended
+verbatim after the brief and is excluded from the forge call. Read input from a
+UTF-8 file to preserve exact bytes. Do not place the original prompt file in the
+working project if you also need it unavailable to the working agent's later
+filesystem reads. The forger has no conversation history, uses an empty temporary
+workspace, disables shell/apps/plugins/hooks/subagents, and inherits the configured
+Codex model. `--forge-model` can override it. The working agent retains its normal
+Codex configuration and approvals.
+
+Strict mode always produces a brief: no simple-request PASS, no `raw:` bypass,
+and no raw fallback on errors or timeouts. Oversized task instructions are rejected;
+large material can go above the marker. `/goal` is not intercepted or activated.
+Exact identifiers and paths omitted by the model are added back deterministically.
+On Windows, oversized cloud command lines are rejected with a preview alternative.
+
+Validation:
+
+```sh
+python -m unittest discover -s codex/tests -v
+```
+
+### Claude Code
+
 From a shell (any machine with Claude Code):
 
 ```bash
