@@ -40,7 +40,20 @@ file = base + "request_processors/thread_goal_processor.rs"
 edit(file,
      "    async fn thread_goal_set_inner(\n        &self,\n        request_id: ConnectionRequestId,\n        params: ThreadGoalSetParams,",
      "    async fn thread_goal_set_inner(\n        &self,\n        request_id: ConnectionRequestId,\n        mut params: ThreadGoalSetParams,")
-edit(file, "        let objective = params.objective.as_deref();",
-     "        crate::prompt_forge::goal(&mut params.objective).await?;\n        let objective = params.objective.as_deref();")
+edit(file, "        let objective = params.objective.as_deref().map(str::trim);",
+     "        if params.origin != Some(ThreadGoalMutationOrigin::Automatic) {\n            crate::prompt_forge::goal(&mut params.objective).await?;\n        }\n        let objective = params.objective.as_deref().map(str::trim);")
+file = base + "request_processors/thread_queue_processor.rs"
+for kind in ("Add", "Update"):
+    edit(file, f"        params: ThreadQueue{kind}Params,", f"        mut params: ThreadQueue{kind}Params,")
+for method in ("add", "update"):
+    path = root / file
+    text = path.read_text(encoding="utf-8")
+    start = text.index(f"    pub(crate) async fn {method}(\n")
+    end = text.index("\n    pub(crate) async fn ", start + 1)
+    section = text[start:end]
+    anchor = "        ensure_direct_input_allowed(loaded_thread.as_deref(), &source)?;"
+    if section.count(anchor) != 1:
+        raise SystemExit("Queue preprocessing anchor changed: " + method)
+    edit(file, section, section.replace(anchor, anchor + "\n        let forge_thread = loaded_thread.as_deref().ok_or_else(|| invalid_request(\"Open this chat before queuing a Prompt Forge message\"))?;\n        crate::prompt_forge::input(forge_thread, &mut params.input, None).await?;"))
 shutil.copyfile(pathlib.Path(__file__).with_name("prompt_forge.rs"), root / base / "prompt_forge.rs")
-print("Applied Prompt Forge at shared turn/start, turn/steer and thread/goal/set handlers.")
+print("Applied Prompt Forge at shared turn/start, turn/steer, queue add/update and thread/goal/set handlers.")
