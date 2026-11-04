@@ -19,6 +19,20 @@ carries a lot ("add multi-tenant support", "push to prod") still gets a full bri
 
 ## Install
 
+### Existing Codex desktop app with shared chats
+
+The experimental [native backend port](codex/backend/README.md) preprocesses typed
+task submissions inside the open-source app-server, before working-agent input or
+history. It keeps the existing desktop UI, the isolated Forge call, the original
+eligibility rules, and `//prompt-forge` material passthrough. Eligible failures
+block submission instead of forwarding the raw draft.
+
+Version-matched Windows and Linux builds target Codex `0.166.0-alpha.6`. Both
+desktops can share one Linux runtime through SSH over ZeroTier. History and live
+events then come from that host; account skill uploads alone do not provide this
+connection or intercept ordinary cloud ChatGPT conversations. Native installation
+requires a successful end-to-end smoke check before activation.
+
 ### Prompt Forge chat client (preprocessing before Send)
 
 The custom client in [`codex/client/`](codex/client/) uses the open-source Codex

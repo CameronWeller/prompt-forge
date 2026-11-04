@@ -8,13 +8,13 @@ import threading
 
 
 class AppServer:
-    def __init__(self, on_event, binary=None):
+    def __init__(self, on_event, binary=None, command=None):
         binary = binary or shutil.which('codex.exe' if os.name == 'nt' else 'codex')
-        if not binary:
+        if not binary and not command:
             raise RuntimeError('Codex CLI is not installed or is not on PATH.')
         env = os.environ.copy()
         env.pop('CODEX_THREAD_ID', None)
-        self.process = subprocess.Popen([binary, 'app-server', '--listen', 'stdio://'],
+        self.process = subprocess.Popen(command or [binary, 'app-server', '--listen', 'stdio://'],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
             text=True, encoding='utf-8', bufsize=1, env=env,
             creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)

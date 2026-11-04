@@ -13,6 +13,19 @@ BRIEF = "\n".join(s + ": a useful brief" for s in forge.SECTIONS)
 
 
 class PreprocessingTests(unittest.TestCase):
+    def test_override_does_not_trim_verbatim_material(self):
+        material = '  café 雪\t  \r\n\r\n//prompt-forge\r\n'
+        seen = []
+        def model(raw, **kwargs):
+            seen.append(raw)
+            source, request = forge.split_material(raw)
+            return forge.assemble(BRIEF, source, request)
+        result = preprocess('forge:\r\n' + material + 'Explain the data.  \r\n', call=model)
+        self.assertTrue(seen[0].startswith(material))
+        self.assertTrue(result['prompt'].endswith(material))
+        exact = '  preserve leading and trailing whitespace  \r\n'
+        self.assertEqual(preprocess('raw:\r\n' + exact)['prompt'], exact)
+
     def test_original_thresholds_and_overrides(self):
         cases = [
             ("one two three", {"first": True}, "skipped", None),

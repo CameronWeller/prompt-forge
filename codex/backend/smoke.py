@@ -48,6 +48,9 @@ def main():
             history = server.call("thread/read", {"threadId": thread_id, "includeTurns": True})["thread"]
             user_items = [item for turn in history["turns"] for item in turn["items"]
                           if item["type"] == "userMessage"]
+            assert any(item.get("text", "").strip() == "NATIVE_FORGE_OK"
+                       for turn in history["turns"] for item in turn["items"]
+                       if item["type"] == "agentMessage"), "Worker did not satisfy the forged request"
             prompt = "\n".join(part["text"] for part in user_items[0]["content"] if part["type"] == "text")
             assert prompt.startswith("GIVEN:"), "Worker received an unforged draft"
             assert prompt.endswith(material), "Material did not survive verbatim"

@@ -19,6 +19,18 @@ GOAL = re.compile(r"^/goal(?:\s+|$)", re.I)
 GOAL_CONTROL = re.compile(r"^(clear|off|none|status|show|pause|resume)$", re.I)
 
 
+def remove_override(raw: str, name: str) -> str:
+    """Remove the control prefix without trimming verbatim source material."""
+    match = re.match(r"^\s*" + name + r":", raw, re.I)
+    if not match:
+        return raw
+    rest = raw[match.end():]
+    newline = re.match(r"^[ \t]*\r?\n", rest)
+    if newline:
+        return rest[newline.end():]
+    return rest[1:] if rest.startswith((" ", "\t")) else rest
+
+
 def classify(raw: str, *, first=False, goal=False, source="user") -> dict:
     def result(decision, reason, text=raw, mode=None):
         return {"decision": decision, "reason": reason, "prompt": text, "mode": mode, "is_goal": goal}
@@ -33,16 +45,16 @@ def classify(raw: str, *, first=False, goal=False, source="user") -> dict:
         if not typed or typed.startswith('-') or GOAL_CONTROL.fullmatch(typed):
             return result("skipped", "goal control", raw)
         if RAW.match(typed):
-            return result("skipped", "raw override", RAW.sub("", typed, count=1))
+            return result("skipped", "raw override", remove_override(raw, "raw"))
         if len(typed) > MAX_INPUT:
             return result("skipped", "over 24000 characters", raw)
         return result("eligible", "goal", raw, "goal")
     if not typed or SLASH.match(typed) or BASH.match(typed):
         return result("skipped", "empty, command, or bash input")
     if RAW.match(typed):
-        return result("skipped", "raw override", RAW.sub("", typed, count=1))
+        return result("skipped", "raw override", remove_override(raw, "raw"))
     forced = bool(FORCE.match(typed))
-    text = FORCE.sub("", typed, count=1) if forced else raw
+    text = remove_override(raw, "forge") if forced else raw
     count = len(text.split())
     reason = "forge override" if forced else "large prompt" if count >= 50 else "first prompt" if first and count >= 4 else None
     if reason is None:

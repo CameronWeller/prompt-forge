@@ -1,4 +1,4 @@
 interface:
   display_name: "Prompt Forge"
-  short_description: "Submit forged briefs to local or cloud Codex"
-  default_prompt: "Use $prompt-forge to explain or troubleshoot the separate submission command."
+  short_description: "Maintain isolated Codex prompt preprocessing"
+  default_prompt: "Use $prompt-forge to explain or troubleshoot the native backend or separate submission command."

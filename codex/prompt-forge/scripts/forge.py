@@ -102,7 +102,7 @@ def forge(raw: str, *, model: str | None = None, timeout: int = 240,
         command = [codex_binary(), "exec", "--ignore-user-config", "--ephemeral",
                    "--skip-git-repo-check", "--sandbox", "read-only", "--json",
                    "--cd", work, "--output-last-message", str(output)]
-        for key in ("hooks", "plugins", "apps", "shell_tool", "multi_agent", "browser_use",
+        for key in ("hooks", "plugins", "apps", "shell_tool", "multi_agent", "multi_agent_v2", "browser_use",
                     "computer_use", "image_generation", "view_image", "memories", "goals",
                     "sleep_tool", "code_mode_host", "workspace_dependencies", "skill_search"):
             command += ["--disable", key]

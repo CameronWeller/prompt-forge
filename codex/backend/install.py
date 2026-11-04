@@ -44,7 +44,7 @@ def main():
     parser.add_argument("--real-codex", type=Path)
     args = parser.parse_args()
     if os.name != "nt":
-        raise SystemExit("This installer is for the Windows host; other devices connect to it remotely.")
+        raise SystemExit("Use install_linux.py for a Linux host.")
     binary = ROOT / "codex.exe"
     rollback = ROOT / "previous-backend.json"
     if args.action == "stage":
@@ -68,6 +68,18 @@ def main():
             "real_codex": str(isolated / "codex.exe"),
             "version": VERSION,
         })
+        bin_dir = Path.home() / ".local/bin"
+        bin_dir.mkdir(parents=True, exist_ok=True)
+        launcher = bin_dir / "codex-forge.exe"
+        marker = bin_dir / "codex-forge-launcher.json"
+        import hashlib
+        if launcher.exists():
+            if not marker.exists() or json.loads(marker.read_text())["sha256"] != hashlib.file_digest(launcher.open("rb"), "sha256").hexdigest():
+                raise SystemExit("An unrelated codex-forge.exe already exists")
+        compiler = Path(os.environ["WINDIR"]) / "Microsoft.NET/Framework64/v4.0.30319/csc.exe"
+        subprocess.run([str(compiler), "/nologo", "/target:exe", "/out:" + str(launcher),
+                        str(ROOT / "codex/backend/BackendLauncher.cs")], check=True)
+        write_json(marker, {"sha256": hashlib.file_digest(launcher.open("rb"), "sha256").hexdigest()})
         print(f"Staged native backend: {binary}")
         print("The app backend selection has not changed. Run the smoke verification before activation.")
     elif args.action == "activate":
@@ -77,7 +89,7 @@ def main():
         proof = json.loads((ROOT / "smoke-verified.json").read_text(encoding="utf-8"))
         if proof["sha256"] != hashlib.file_digest(binary.open("rb"), "sha256").hexdigest():
             raise SystemExit("Backend binary changed since verification")
-        previous = environment(str(binary))
+        previous = environment("codex-forge")
         if not rollback.exists():
             write_json(rollback, {"CODEX_CLI_PATH": previous})
         print("Prompt Forge selected for the next complete Codex desktop restart.")
