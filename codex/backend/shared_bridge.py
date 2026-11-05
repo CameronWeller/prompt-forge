@@ -10,6 +10,10 @@ def main():
     root = Path(__file__).resolve().parents[2]
     binary = root / "codex-bin"
     arguments = sys.argv[1:]
+    # Desktop reads organization policy with a one-shot JSON command before
+    # opening its main connection. Preserve the native policy response.
+    if "--print-startup-config" in arguments:
+        os.execv(str(binary), [str(binary), *arguments])
     if "app-server" in arguments:
         tail = arguments[arguments.index("app-server") + 1:]
         desktop_proxy = tail == ["proxy"]

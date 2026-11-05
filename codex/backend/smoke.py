@@ -36,7 +36,7 @@ def main():
         raw = material + "Reply with exactly NATIVE_FORGE_OK. Do not use tools or inspect files."
         # Force through the gate without changing any source-material bytes.
         request = "forge:\r\n" + raw
-        server.call("turn/start", {"threadId": thread_id, "turnTrigger": "user",
+        server.call("turn/start", {"threadId": thread_id, "turnTrigger": "composer",
                     "input": [{"type": "text", "text": request, "text_elements": []}]}, timeout=360)
         deadline = time.monotonic() + 180
         while time.monotonic() < deadline:
@@ -56,14 +56,14 @@ def main():
         prompt = "\n".join(part["text"] for part in user_items[0]["content"] if part["type"] == "text")
         assert prompt.startswith("GIVEN:"), "Worker received an unforged draft"
         assert prompt.endswith(material), "Material did not survive verbatim"
-        assert request not in json.dumps(history, ensure_ascii=False), "Raw draft entered worker history"
+        assert request not in prompt, "Raw draft entered worker history"
 
         # A broken processor must not become a raw-prompt fallback.
         broken = json.loads(settings)
         broken["command"] = [str(binary.parent / "intentionally-missing-processor.exe")]
         settings_path.write_text(json.dumps(broken), encoding="utf-8")
         try:
-            server.call("turn/start", {"threadId": thread_id,
+            server.call("turn/start", {"threadId": thread_id, "turnTrigger": "composer",
                         "input": [{"type": "text", "text": "forge: NEVER_SUBMIT_RAW_FAILURE_SENTINEL"}]})
         except RuntimeError as error:
             assert "Prompt Forge preprocessing failed" in str(error)

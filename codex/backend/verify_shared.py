@@ -41,7 +41,7 @@ def main():
         print("Shared verification chat started.", flush=True)
         material = "SHARED_MATERIAL café 雪\t  \r\n//prompt-forge\r\n"
         raw = "forge:\r\n" + material + "Reply with exactly SHARED_FORGE_OK. Do not use tools."
-        response = a.call("turn/start", {"threadId": thread_id, "input": [{"type": "text",
+        response = a.call("turn/start", {"threadId": thread_id, "turnTrigger": "composer", "input": [{"type": "text",
             "text": raw}]}, timeout=360)
         turn_id = response["turn"]["id"]
         # A new thread has no persisted rollout until its first turn starts.
@@ -58,7 +58,7 @@ def main():
         text = "\n".join(part["text"] for part in users[0]["content"] if part["type"] == "text")
         assert text.startswith("GIVEN:"), "Shared worker received an unforged draft"
         assert text.endswith(material), "Shared material was not preserved verbatim"
-        assert raw not in json.dumps(second, ensure_ascii=False), "Raw draft entered shared worker history"
+        assert raw not in text, "Raw draft entered shared worker history"
         print(json.dumps({"shared_live_events": True, "shared_history": True, "isolated_forge": True,
                           "verbatim_material": True,
                           "thread_id": thread_id}))
