@@ -12,8 +12,9 @@ def main():
     arguments = sys.argv[1:]
     if "app-server" in arguments:
         tail = arguments[arguments.index("app-server") + 1:]
+        desktop_proxy = tail == ["proxy"]
         subcommands = {"daemon", "proxy", "generate-ts", "generate-json-schema"}
-        if not any(arg in subcommands for arg in tail):
+        if desktop_proxy or not any(arg in subcommands for arg in tail):
             # Only a local Unix socket is exposed. Remote desktops arrive through
             # their existing SSH connection over ZeroTier.
             subprocess.run(["systemctl", "--user", "start", "prompt-forge-app-server.service"],
@@ -23,8 +24,11 @@ def main():
                 if time.monotonic() >= deadline:
                     raise RuntimeError("Shared socket did not become ready")
                 time.sleep(0.05)
-            # The upstream `app-server proxy` relays raw socket bytes. The Unix
-            # endpoint is WebSocket/HTTP, whereas desktop SSH startup uses JSONL.
+            # Desktop SSH already speaks WebSocket over its raw proxy. Without
+            # an explicit socket, upstream connects it to the stock daemon.
+            if desktop_proxy:
+                os.execv(str(binary), [str(binary), *arguments, "--sock", str(root / "shared.sock")])
+            # Local JSONL clients need the WebSocket adapter instead.
             from socket_bridge import run
             run(root / "shared.sock")
             return

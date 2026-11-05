@@ -90,7 +90,8 @@ pub(crate) async fn input(
 ) -> Result<(), JSONRPCErrorError> {
     // Internal continuations and tool results are not human drafts.
     if trigger.is_some_and(|trigger| !matches!(trigger,
-        "user" | "edit_user_message" | "notification_reply" | "scheduled_task_reply"
+        "user" | "composer" | "composer_queue" | "composer_queue_run_now"
+            | "edit_user_message" | "notification_reply" | "scheduled_task_reply"
     )) { return Ok(()); }
     let original = joined_text(input);
     if original.is_empty() { return Ok(()); }
