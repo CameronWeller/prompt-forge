@@ -68,12 +68,16 @@ SSH connection resolves it on the Linux host. Select that host for shared chats.
 On Windows, `codex-forge.exe` is the verified native executable itself, next to
 its helpers and settings; its directory is added to the user's PATH. No extra
 locally compiled launcher is required.
+For a Windows update while the app is running, pass the same `--revision` commit
+hash to `install.py stage`, `activate`, and `restore`. This keeps the previous
+executable available for rollback while the current app finishes its work.
 `verify_shared.py` checks that two SSH clients receive the same live completion and
 history. Existing chats on separate hosts are not automatically merged.
 
-The private Unix endpoint speaks WebSocket. `socket_bridge.py` adapts the desktop's
-JSONL stdio transport, including masked client frames, fragmented server messages,
-and ping/pong. It never listens on a public TCP port. If small SSH commands work
+The private Unix endpoint speaks WebSocket. An SSH desktop runs `app-server proxy`,
+which the launcher points at the shared socket. Local JSONL clients use
+`socket_bridge.py` to reach that same endpoint. The desktop's one-shot policy
+check runs through the native executable. If small SSH commands work
 but larger responses stall over ZeroTier, check the tunnel MTU before diagnosing
 the app-server; a smaller interface MTU can resolve packet-size black holes.
 
