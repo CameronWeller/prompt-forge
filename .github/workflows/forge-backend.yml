@@ -1,0 +1,75 @@
+name: Build Prompt Forge backend
+on:
+  push:
+    branches: [codex-strict-submit]
+    paths: ['codex/backend/prompt_forge.rs', 'codex/backend/apply.py', '.github/workflows/forge-backend.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: forge-backend-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  windows:
+    runs-on: windows-2025
+    timeout-minutes: 120
+    env:
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_RELEASE_DEBUG: '0'
+      CARGO_PROFILE_RELEASE_LTO: 'false'
+      CARGO_BUILD_JOBS: '3'
+      LIBSQLITE3_FLAGS: SQLITE_DISABLE_INTRINSIC
+      CARGO_HOME: D:\c
+      CARGO_TARGET_DIR: D:\t
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          repository: openai/codex
+          ref: 4f093f2748667f3b0e6a07e3d4055121cbd3ce64
+          persist-credentials: false
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          path: forge
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582
+        with:
+          targets: x86_64-pc-windows-msvc
+      - name: Enable long source paths
+        run: git config --global core.longpaths true
+      - uses: ./.github/actions/setup-msvc-env
+        with:
+          target: x86_64-pc-windows-msvc
+      - uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-pc-windows-msvc
+      - name: Apply preprocessing patch
+        run: python forge/codex/backend/apply.py .
+      - uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: |
+            D:/c/registry
+            D:/c/git
+            D:/t
+          key: forge166-alpha6-win-${{ github.run_id }}
+          restore-keys: forge166-alpha6-win-
+      - name: Build version-matched backend
+        working-directory: codex-rs
+        run: cargo build --locked --release --target x86_64-pc-windows-msvc --bin codex
+      - name: Test preprocessing input boundary
+        working-directory: codex-rs
+        run: cargo test --locked --release --target x86_64-pc-windows-msvc -p codex-app-server --lib prompt_forge::tests
+      - uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
+        if: always() && !cancelled()
+        with:
+          path: |
+            D:/c/registry
+            D:/c/git
+            D:/t
+          key: forge166-alpha6-win-${{ github.run_id }}
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: prompt-forge-codex-0.166.0-alpha.6-windows-x64
+          path: D:/t/x86_64-pc-windows-msvc/release/codex.exe
+          if-no-files-found: error
+          retention-days: 30

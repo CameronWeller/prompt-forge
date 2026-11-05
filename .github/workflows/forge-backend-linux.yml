@@ -1,0 +1,73 @@
+name: Build Prompt Forge Linux backend
+on:
+  push:
+    branches: [codex-strict-submit]
+    paths: ['codex/backend/prompt_forge.rs', 'codex/backend/apply.py', '.github/workflows/forge-backend-linux.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: forge-backend-linux-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_RELEASE_DEBUG: '0'
+      CARGO_PROFILE_RELEASE_LTO: 'false'
+      CARGO_BUILD_JOBS: '3'
+      CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: clang
+      RUSTFLAGS: '-C link-arg=-fuse-ld=lld'
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          repository: openai/codex
+          ref: 4f093f2748667f3b0e6a07e3d4055121cbd3ce64
+          persist-credentials: false
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          path: forge
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582
+        with:
+          targets: x86_64-unknown-linux-gnu
+      - name: Install native build dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y --no-install-recommends build-essential pkg-config libcap-dev libasound2-dev bubblewrap libssl-dev clang lld
+      - uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-unknown-linux-gnu
+      - name: Apply preprocessing patch
+        run: python3 forge/codex/backend/apply.py .
+      - uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            codex-rs/target
+          key: forge166-alpha6-linux-${{ github.run_id }}
+          restore-keys: forge166-alpha6-linux-
+      - name: Build native backend
+        working-directory: codex-rs
+        run: cargo build --locked --release --target x86_64-unknown-linux-gnu --bin codex
+      - name: Test preprocessing input boundary
+        working-directory: codex-rs
+        run: cargo test --locked --release --target x86_64-unknown-linux-gnu -p codex-app-server --lib prompt_forge::tests
+      - uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
+        if: always() && !cancelled()
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            codex-rs/target
+          key: forge166-alpha6-linux-${{ github.run_id }}
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: prompt-forge-codex-0.166.0-alpha.6-linux-x64
+          path: codex-rs/target/x86_64-unknown-linux-gnu/release/codex
+          if-no-files-found: error
+          retention-days: 30

@@ -19,6 +19,125 @@ carries a lot ("add multi-tenant support", "push to prod") still gets a full bri
 
 ## Install
 
+### Existing Codex desktop app with shared chats
+
+The experimental [native backend port](codex/backend/README.md) preprocesses typed
+task submissions inside the open-source app-server, before working-agent input or
+history. It keeps the existing desktop UI, the isolated Forge call, the original
+eligibility rules, and `//prompt-forge` material passthrough. Eligible failures
+block submission instead of forwarding the raw draft.
+
+Version-matched Windows and Linux builds target Codex `0.166.0-alpha.6`. Both
+desktops can share one Linux runtime through SSH over ZeroTier. History and live
+events then come from that host; account skill uploads alone do not provide this
+connection or intercept ordinary cloud ChatGPT conversations. Native installation
+requires a successful end-to-end smoke check before activation.
+
+### Prompt Forge chat client (preprocessing before Send)
+
+The custom client in [`codex/client/`](codex/client/) uses the open-source Codex
+app-server and your existing Codex login. Its Send pipeline runs Prompt Forge
+**before** submitting a working turn. It is a separate local app, not a rebuild
+or patch of the ChatGPT desktop app, and it does not install an interpretation skill.
+
+```sh
+python codex/client/install_client.py
+```
+
+On Windows, double-click **Prompt Forge** on your desktop. On macOS/Linux, use
+`prompt-forge-chat` from `~/.local/bin`, or run `python codex/client/launch.pyw`.
+The launcher starts a hidden, loopback-only backend and opens the chat UI. Select
+a working folder and model, then type normally. No copying files or terminal work
+is needed for everyday use on the installed Windows machine.
+
+- The first message with 4+ words, subsequent messages with 50+ words, new goals,
+  and `forge:` overrides are eligible. Ordinary eligible messages get the upstream
+  semantic simplicity gate and may PASS unchanged. `raw:` explicitly skips forging.
+- `//prompt-forge` and `//PROMPT FORGE:` preserve material above the marker and
+  exclude it from the forger; the instructions go below. The marker alone does
+  not force a brief. Browser input preserves the received string, but may normalize
+  pasted line endings. Use UTF-8 files with the separate CLI for original-byte fidelity.
+- A forged request sends only the brief plus preserved material to the worker.
+  Skips/PASS intentionally send the original request with any control prefix removed.
+  An eligible forge failure stops submission; it never silently sends the raw draft.
+- The UI supports streamed responses, project folders, model selection, saved
+  conversations, Stop, command/file/permission approvals, and user-input questions.
+  `/goal <condition>` forges and sets a goal; clear/pause/resume/status control it.
+  Unsupported MCP form/URL elicitation is declined, not auto-approved.
+- Client history at `~/.codex/prompt-forge-client` contains only submitted prompts
+  and responses. Original drafts stay in memory until dispatch; no raw draft is
+  written to history or passed as hidden context to app-server. The forger has no
+  worker history, workspace access, tools, or persistent session.
+- Chat history is local and not account-synced across devices. Install the portable
+  source on another host with Python 3.11+ and an authenticated Codex CLI to use it
+  there. This version does not expose a public service or provide hosted/mobile sync.
+
+Protocol: [Codex app-server](https://learn.chatgpt.com/docs/app-server).
+Tested with Codex CLI 0.160.0 and Python 3.14 on Windows.
+
+### Codex (strict external submission)
+
+The Codex port lives in [`codex/`](codex/). It runs an isolated, ephemeral Codex
+forge call **before** starting the working agent. The raw request is not submitted
+to that agent. This is a separate terminal command, not an automatic desktop or
+cloud-composer hook; native Codex hooks cannot replace the submitted user prompt.
+
+Requires Python 3.11+, a current Codex CLI (`0.160.0` tested), and `codex login`.
+Install on Windows, macOS, or Linux:
+
+```sh
+python codex/install.py
+# For a reviewed update: python codex/install.py --update
+```
+
+Open a new terminal with `~/.local/bin` on PATH (the Windows installer updates the
+user PATH). The installed skill helps explain and maintain the command; invoking
+the skill inside an existing chat cannot retroactively hide its raw prompt.
+
+```sh
+prompt-forge preview --file task.txt --output forged.txt
+prompt-forge local --file task.txt --cwd /path/to/project
+prompt-forge cloud --file task.txt --env YOUR_CLOUD_ENVIRONMENT_ID --branch main
+```
+
+The cloud command uses `codex cloud exec`. Supply an environment ID accepted by
+that CLI service. Desktop Codex Cloud saved-configuration IDs are not assumed to
+be interchangeable with CLI environment IDs. For cloud surfaces that do not accept
+CLI submission, use preview and submit **only the generated output** in the cloud
+composer. This does not install anything into cloud orchestrators or intercept
+future messages typed directly in local, web, or mobile chats.
+
+Keep raw material above a marker and the task below it:
+
+```text
+Exact source text, logs, or code — spaces and line endings are retained.
+//prompt-forge
+Explain what this material shows and identify the next check to run.
+```
+
+`//PROMPT FORGE:` also works. Everything through the marker line is appended
+verbatim after the brief and is excluded from the forge call. Read input from a
+UTF-8 file to preserve exact bytes. Do not place the original prompt file in the
+working project if you also need it unavailable to the working agent's later
+filesystem reads. The forger has no conversation history, uses an empty temporary
+workspace, disables shell/apps/plugins/hooks/subagents, and inherits the configured
+Codex model. `--forge-model` can override it. The working agent retains its normal
+Codex configuration and approvals.
+
+Strict mode always produces a brief: no simple-request PASS, no `raw:` bypass,
+and no raw fallback on errors or timeouts. Oversized task instructions are rejected;
+large material can go above the marker. `/goal` is not intercepted or activated.
+Exact identifiers and paths omitted by the model are added back deterministically.
+On Windows, oversized cloud command lines are rejected with a preview alternative.
+
+Validation:
+
+```sh
+python -m unittest discover -s codex/tests -v
+```
+
+### Claude Code
+
 From a shell (any machine with Claude Code):
 
 ```bash
