@@ -62,6 +62,8 @@ MIT) and the BMad Method (github.com/bmad-code-org/BMAD-METHOD, MIT) are folded 
 - **Long work:** state each step's hypothesis, print compact summaries, keep notes that survive a
   restart, keep copies of the best result, and warn about output that could get a session refused.
 - VERIFY names a judge other than the model and a specific hard goal ("200 ms", not "faster").
+- **A loop, not a script:** each DO step is try, check, and on failure the exact error feeds the next
+  try; never repeat an attempt unchanged.
 - **Measurable outcomes:** fix the protocol first; compare against an unchanged baseline on the same
   items; confirm on held-out items; state the standard error and the smallest effect that counts; use
   cheap dense signals beside costly ones. Name the proxy that could mislead, and judge by the outcome.
@@ -74,6 +76,12 @@ MIT) and the BMad Method (github.com/bmad-code-org/BMAD-METHOD, MIT) are folded 
   user, analyst, journalist, editor, motion and audio design, or any other field that helps, plus
   an adversary (red team, skeptic, short seller, forensic accountant or checker). Each does what
   that role does, never role-play.
+
+**Loop (how the work stops)**
+- STOP sets `Done when:` (the VERIFY checks that mean success), `Attempts:` (a cap per approach,
+  default 3), `Budget:` (time, runs or money where costly, "(inferred)" unless given) and
+  `Hand back when:` (the same failure twice, an ASK FIRST reading met mid-work, a BOUNDS limit in the
+  way, the budget spent). A stop is a result; REPORT says which condition ended the run.
 
 **Report**
 - How the work runs and ends: when it is finished, what gets handed over, and any exact reply format.
@@ -117,9 +125,10 @@ WHY: <the goal beyond the goal; what the result unblocks>
 TRACK: <Clarify | Plan | Build-and-verify, why, and where decisions are recorded>
 SCOPE: <what counts, what does not, tempting shortcuts, limits tooling enforces>
 RESOURCES: <tools, data, schemas, hard limits, a finite budget where runs are costly>
-DO: <verbs a top practitioner would do, with rawest inputs and real tools/paths>
+DO: <verbs a top practitioner would do, with rawest inputs and real tools/paths; try, check, retry with the exact error>
 CREW: <disciplines/adversary to apply, as actions>
 VERIFY: <outside check: command, test, data, independent reviewer; exit codes expected>
+STOP: <Done when / Attempts / Budget / Hand back when: the loop the agent runs and how it ends>
 BOUNDS: <Not allowed and Allowed lists: limits, risk tier, files not to touch>
 ASSUMPTIONS: <what was inferred rather than stated; report where one proved wrong>
 REPORT: <what to return, how short; what was skipped and why>
