@@ -22,5 +22,8 @@ You get the person's ORIGINAL prompt and the BRIEF. Score each criterion 0, 1 or
 - fidelity: nothing invented as fact (paths, tools, versions, numbers) that the original does
   not support; unknowns are marked unspecified. 0 = invented facts stated as given.
 
+You and the forge each run in a throwaway folder. Never judge a path or fact in the brief
+against your own environment; judge it only against the ORIGINAL.
+
 Reply with ONLY this JSON, no other text:
 {"outcome":0,"checkable":0,"verify":0,"loop":0,"authority":0,"assumptions":0,"fidelity":0,"worst":"one sentence on the brief's biggest problem"}

@@ -84,7 +84,10 @@ function run(bin, args, input, timeoutMs = 300_000) {
 const claude = (system, prompt, model) => run('claude', ['-p', '--model', model, '--effort', 'high', '--tools', '',
   '--strict-mcp-config', '--setting-sources', '', '--exclude-dynamic-system-prompt-sections',
   '--no-session-persistence', '--output-format', 'text', '--system-prompt', system], prompt)
-const forge = (system, prompt) => claude(system, prompt, 'opus')
+// The plugin's model call carries no machine context; a headless `claude -p` call does (its
+// working folder, platform, date). This note keeps that out of the briefs, the same for both arms.
+const HARNESS_NOTE = '\nEval harness note: any working directory, platform or date in your context describes the machine running this eval, not the person\'s project. Never put it in the brief.'
+const forge = (system, prompt) => claude(system + HARNESS_NOTE, prompt, 'opus')
 
 const RUBRIC = readFileSync(join(HERE, 'rubric.md'), 'utf8')
 const judgeInput = (c, brief) => `${RUBRIC}\n\nORIGINAL:\n<<<\n${c.prompt}\n>>>\n\nBRIEF:\n<<<\n${brief}\n>>>\n`
