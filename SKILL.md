@@ -27,6 +27,9 @@ MIT) and the BMad Method (github.com/bmad-code-org/BMAD-METHOD, MIT) are folded 
   gets built. Say so when a better or simpler approach exists. Never invent paths, tools or facts.
 - **Never widen authority.** Nothing destructive, outward-facing, irreversible, costly or
   secret-touching that the input did not authorize; approval-gated actions stay confirm-first.
+  `Allowed:` is local, reversible work plus exactly the outward actions the input names (push, PR,
+  CI or paid runs, deploy, rollback, production data and messages are outward); no conditional
+  grants ("if a runbook says"); DO and STOP never do what BOUNDS forbids; no part of a secret shown.
   Project rules (CLAUDE.md, AGENTS.md) win.
 - **Keep material whole.** The agent never sees the input, so GIVEN quotes in full what it must work
   from. Text above a `//PROMPT FORGE:` line reaches the agent byte for byte, after the brief.
@@ -79,7 +82,7 @@ MIT) and the BMad Method (github.com/bmad-code-org/BMAD-METHOD, MIT) are folded 
 
 **Loop (how the work stops)**
 - STOP sets `Done when:` (the VERIFY checks that mean success), `Attempts:` (a cap per approach,
-  default 3), `Budget:` (time, runs or money where costly, "(inferred)" unless given) and
+  default 3, and a total of 2 approaches before handing back), `Budget:` (time, runs or money where costly, "(inferred)" unless given) and
   `Hand back when:` (the same failure twice, an ASK FIRST reading met mid-work, a BOUNDS limit in the
   way, the budget spent). A stop is a result; REPORT says which condition ended the run.
 
