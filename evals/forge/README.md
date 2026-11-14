@@ -6,9 +6,11 @@ different. This eval is how you tell. It is the same loop engineering pattern th
 forge itself:
 
 1. **A fixed set of prompts** (`prompts/`). Each one is a realistic loose prompt, marked with
-   whether the forge should brief it or answer PASS, and whether it is risky. Eight are for
-   training, meaning you can look at them while changing the rules. Six are held out, and you
-   should never tune against them, so they show whether a change really generalizes.
+   whether the forge should brief it or answer PASS, and whether it is risky. Most are for
+   training: you can read their results while you change the rules. Five are held out, so they
+   show whether a change really generalizes. **Once anyone has read held-out results while
+   editing the rules, move those prompts to training and add fresh held-out ones.** That has
+   happened twice so far, which is why 09 to 14 are now training prompts.
 2. **Forge every prompt twice:** once with the current rules (`--baseline`, default `HEAD`)
    and once with your working tree. Each call is the same isolated, tool-less Opus call the
    plugin makes.
@@ -33,8 +35,8 @@ node --test evals/forge/run.test.mjs                    # the eval's own unit te
 ```
 
 The script exits 0 when the change may ship, and 1 when it may not. Reports go to
-`evals/forge/results/`, which git ignores. A full run makes 28 forge calls plus up to 22 judge
-calls, which takes about 20 to 40 minutes.
+`evals/forge/results/`, which git ignores. A full run makes 38 forge calls plus up to 32 judge
+calls, which takes about 40 to 60 minutes (double that with `--repeat 2`).
 
 **Where proposals come from.** loop-engineering's weekly tuning loop reads how forged briefs
 did in real runs. That covers which assumptions proved wrong, and which review rejections

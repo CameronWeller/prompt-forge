@@ -1,5 +1,5 @@
 ---
-split: heldout
+split: train
 expect: brief
 risky: true
 ---

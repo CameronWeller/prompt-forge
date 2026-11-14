@@ -48,6 +48,10 @@ MIT) and the BMad Method (github.com/bmad-code-org/BMAD-METHOD, MIT) are folded 
   Creative work: hold the intent, don't inflate it.
 - **Vague words become checkable criteria.** Solutions beyond the literal ask are welcome and
   listed in ASSUMPTIONS.
+- **Smallest reading first.** Where a choice changes what gets built (project, audience, how far
+  to go, which change), build the smallest reading that meets the purpose and mark bigger ones ASK
+  FIRST; extras are proposals, never mandatory. Third-party tool capabilities are steps to check,
+  not facts; a fact the right action depends on is established first or asked.
 - **Say what counts.** SCOPE gives examples in and out of scope, names the tempting shortcuts that
   satisfy the words and miss the purpose, and marks limits that tooling enforces or could.
 - **Right-sized track:** Clarify a vague notion, Plan a big clear idea, or Build-and-verify a small
@@ -88,6 +92,9 @@ MIT) and the BMad Method (github.com/bmad-code-org/BMAD-METHOD, MIT) are folded 
   default 3, and a total of 2 approaches before handing back), `Budget:` (time, runs or money where costly, "(inferred)" unless given) and
   `Hand back when:` (the same failure twice, an ASK FIRST reading met mid-work, a BOUNDS limit in the
   way, the budget spent). A stop is a result; REPORT says which condition ended the run.
+  One budget covers the whole run and the runs VERIFY needs; no run is called cheap without
+  evidence. `Done when` is the OUTCOME itself, not a proxy; where only the person can confirm it,
+  or BOUNDS stops the last step, every section says the run ends there and hands back.
 
 **Report**
 - How the work runs and ends: when it is finished, what gets handed over, and any exact reply format.
