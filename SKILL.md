@@ -27,6 +27,12 @@ MIT) and the BMad Method (github.com/bmad-code-org/BMAD-METHOD, MIT) are folded 
   gets built. Say so when a better or simpler approach exists. Never invent paths, tools or facts.
 - **Never widen authority.** Nothing destructive, outward-facing, irreversible, costly or
   secret-touching that the input did not authorize; approval-gated actions stay confirm-first.
+  `Allowed:` is local, reversible work plus exactly the outward actions the input names (push, PR,
+  CI or paid runs, deploy, rollback, production data and messages are outward); no conditional
+  grants ("if a runbook says"); DO and STOP never do what BOUNDS forbids; no part of a secret shown.
+  A named action covers only itself ("push to prod" is not its migrations); irreversible local work
+  (schema or data changes on a real database, deleting untracked files) is confirm-first; writing a
+  step into the plan is not confirmation; no command whose output could print a secret.
   Project rules (CLAUDE.md, AGENTS.md) win.
 - **Keep material whole.** The agent never sees the input, so GIVEN quotes in full what it must work
   from. Text above a `//PROMPT FORGE:` line reaches the agent byte for byte, after the brief.
@@ -42,6 +48,10 @@ MIT) and the BMad Method (github.com/bmad-code-org/BMAD-METHOD, MIT) are folded 
   Creative work: hold the intent, don't inflate it.
 - **Vague words become checkable criteria.** Solutions beyond the literal ask are welcome and
   listed in ASSUMPTIONS.
+- **Smallest reading first.** Where a choice changes what gets built (project, audience, how far
+  to go, which change), build the smallest reading that meets the purpose and mark bigger ones ASK
+  FIRST; extras are proposals, never mandatory. Third-party tool capabilities are steps to check,
+  not facts; a fact the right action depends on is established first or asked.
 - **Say what counts.** SCOPE gives examples in and out of scope, names the tempting shortcuts that
   satisfy the words and miss the purpose, and marks limits that tooling enforces or could.
 - **Right-sized track:** Clarify a vague notion, Plan a big clear idea, or Build-and-verify a small
@@ -62,6 +72,8 @@ MIT) and the BMad Method (github.com/bmad-code-org/BMAD-METHOD, MIT) are folded 
 - **Long work:** state each step's hypothesis, print compact summaries, keep notes that survive a
   restart, keep copies of the best result, and warn about output that could get a session refused.
 - VERIFY names a judge other than the model and a specific hard goal ("200 ms", not "faster").
+- **A loop, not a script:** each DO step is try, check, and on failure the exact error feeds the next
+  try; never repeat an attempt unchanged.
 - **Measurable outcomes:** fix the protocol first; compare against an unchanged baseline on the same
   items; confirm on held-out items; state the standard error and the smallest effect that counts; use
   cheap dense signals beside costly ones. Name the proxy that could mislead, and judge by the outcome.
@@ -74,6 +86,15 @@ MIT) and the BMad Method (github.com/bmad-code-org/BMAD-METHOD, MIT) are folded 
   user, analyst, journalist, editor, motion and audio design, or any other field that helps, plus
   an adversary (red team, skeptic, short seller, forensic accountant or checker). Each does what
   that role does, never role-play.
+
+**Loop (how the work stops)**
+- STOP sets `Done when:` (the VERIFY checks that mean success), `Attempts:` (a cap per approach,
+  default 3, and a total of 2 approaches before handing back), `Budget:` (time, runs or money where costly, "(inferred)" unless given) and
+  `Hand back when:` (the same failure twice, an ASK FIRST reading met mid-work, a BOUNDS limit in the
+  way, the budget spent). A stop is a result; REPORT says which condition ended the run.
+  One budget covers the whole run and the runs VERIFY needs; no run is called cheap without
+  evidence. `Done when` is the OUTCOME itself, not a proxy; where only the person can confirm it,
+  or BOUNDS stops the last step, every section says the run ends there and hands back.
 
 **Report**
 - How the work runs and ends: when it is finished, what gets handed over, and any exact reply format.
@@ -117,9 +138,10 @@ WHY: <the goal beyond the goal; what the result unblocks>
 TRACK: <Clarify | Plan | Build-and-verify, why, and where decisions are recorded>
 SCOPE: <what counts, what does not, tempting shortcuts, limits tooling enforces>
 RESOURCES: <tools, data, schemas, hard limits, a finite budget where runs are costly>
-DO: <verbs a top practitioner would do, with rawest inputs and real tools/paths>
+DO: <verbs a top practitioner would do, with rawest inputs and real tools/paths; try, check, retry with the exact error>
 CREW: <disciplines/adversary to apply, as actions>
 VERIFY: <outside check: command, test, data, independent reviewer; exit codes expected>
+STOP: <Done when / Attempts / Budget / Hand back when: the loop the agent runs and how it ends>
 BOUNDS: <Not allowed and Allowed lists: limits, risk tier, files not to touch>
 ASSUMPTIONS: <what was inferred rather than stated; report where one proved wrong>
 REPORT: <what to return, how short; what was skipped and why>

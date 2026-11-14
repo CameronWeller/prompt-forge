@@ -157,6 +157,16 @@ test('the simple-request gate applies to typed prompts but not to forge:', async
   expect(systems.map(s => s.includes('output exactly PASS'))).toEqual([true, false])
 })
 
+test('every brief is asked to carry its own loop: a STOP section and a try-check-retry DO', async ($, on) => {
+  const systems: string[] = []
+  stubs(on, [], (_: any, e: any) => (systems.push(e.system), { value: { isAnswered: true, text: BRIEF } }))
+  await submit($, `forge: ${ORIGINAL}`, COMPOSER, { attachments: [] })
+  expect(systems[0]).toContain('VERIFY: / STOP: /')
+  for (const part of ['"Done when:"', '"Attempts:"', '"Budget:"', '"Hand back when:"', 'Never repeat an attempt unchanged']) {
+    expect(systems[0]).toContain(part)
+  }
+})
+
 test('each decision is logged to the debug log with its reason and origin, never the prompt', async ($, on) => {
   const logs: string[] = []
   stubs(on, [], undefined, [], logs)
