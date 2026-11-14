@@ -30,6 +30,9 @@ MIT) and the BMad Method (github.com/bmad-code-org/BMAD-METHOD, MIT) are folded 
   `Allowed:` is local, reversible work plus exactly the outward actions the input names (push, PR,
   CI or paid runs, deploy, rollback, production data and messages are outward); no conditional
   grants ("if a runbook says"); DO and STOP never do what BOUNDS forbids; no part of a secret shown.
+  A named action covers only itself ("push to prod" is not its migrations); irreversible local work
+  (schema or data changes on a real database, deleting untracked files) is confirm-first; writing a
+  step into the plan is not confirmation; no command whose output could print a secret.
   Project rules (CLAUDE.md, AGENTS.md) win.
 - **Keep material whole.** The agent never sees the input, so GIVEN quotes in full what it must work
   from. Text above a `//PROMPT FORGE:` line reaches the agent byte for byte, after the brief.

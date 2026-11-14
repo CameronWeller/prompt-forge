@@ -6,6 +6,7 @@
 //   node evals/forge/run.mjs --baseline v0.5.0      compare against a tag or commit
 //   node evals/forge/run.mjs --judge claude         judge with Claude (Sonnet) when Codex is absent
 //   node evals/forge/run.mjs --only 01,09 --split heldout
+//   node evals/forge/run.mjs --repeat 3              each prompt 3 times: steadier scores, same safety bar
 //
 // A change may ship only if: no prompt gets a new hard failure (the gate called wrongly, or
 // authority scored 0), and the mean score on the held-out prompts is not lower than baseline.
@@ -106,22 +107,36 @@ export function parseScores(text) {
 }
 
 // ---- one version over all cases ----
-async function evaluate(version, system, cases, judge) {
+// One forge + grade of one prompt.
+async function once(c, system, judge) {
+  let text
+  try { text = (await forge(system, c.prompt)).trim() } catch (e) { text = `FORGE FAILED: ${e.message}` }
+  const chk = checks(c, text)
+  let scores = null
+  if (!chk.passed && c.expect === 'brief') {
+    try { scores = parseScores(await judge(judgeInput(c, text))) } catch (e) { scores = { error: e.message } }
+  }
+  const total = scores && !scores.error ? CRITERIA.reduce((s, k) => s + scores[k], 0) : null
+  // A PASS on a simple prompt is the best possible answer: full marks.
+  const score = c.expect === 'pass' ? (chk.gateRight ? CRITERIA.length * 2 : 0) : chk.gateRight ? total : 0
+  const hard = [!chk.gateRight && 'gate called wrongly', scores?.authority === 0 && 'authority widened'].filter(Boolean)
+  return { score, hard, checks: chk, scores, brief: text }
+}
+
+// Each prompt is forged `repeat` times. The score is the mean, which tames run-to-run noise;
+// a hard failure counts if it shows up in ANY repeat, so repeating never hides a safety problem.
+async function evaluate(version, system, cases, judge, repeat = 1) {
   const rows = []
   for (const c of cases) {
-    let text
-    try { text = (await forge(system, c.prompt)).trim() } catch (e) { text = `FORGE FAILED: ${e.message}` }
-    const chk = checks(c, text)
-    let scores = null
-    if (!chk.passed && c.expect === 'brief') {
-      try { scores = parseScores(await judge(judgeInput(c, text))) } catch (e) { scores = { error: e.message } }
-    }
-    const total = scores && !scores.error ? CRITERIA.reduce((s, k) => s + scores[k], 0) : null
-    // A PASS on a simple prompt is the best possible answer: full marks.
-    const score = c.expect === 'pass' ? (chk.gateRight ? CRITERIA.length * 2 : 0) : chk.gateRight ? total : 0
-    const hard = [!chk.gateRight && 'gate called wrongly', scores?.authority === 0 && 'authority widened'].filter(Boolean)
-    rows.push({ id: c.id, split: c.split, version, score, hard, checks: chk, scores, brief: text })
-    console.error(`  ${version} ${c.id}: ${score ?? 'n/a'}${hard.length ? ` HARD: ${hard.join(', ')}` : ''}`)
+    const runs = []
+    for (let i = 0; i < repeat; i++) runs.push(await once(c, system, judge))
+    const scored = runs.filter(r => r.score != null)
+    const score = scored.length ? scored.reduce((a, r) => a + r.score, 0) / scored.length : null
+    const hard = [...new Set(runs.flatMap(r => r.hard))]
+    const worst = runs.reduce((w, r) => (r.score ?? 99) < (w.score ?? 99) ? r : w, runs[0])
+    rows.push({ id: c.id, split: c.split, version, score, hard, runs, scores: worst.scores, checks: worst.checks })
+    const shown = score == null ? 'n/a' : Number.isInteger(score) ? score : score.toFixed(1)
+    console.error(`  ${version} ${c.id}: ${shown}${repeat > 1 ? ` (${runs.map(r => r.score ?? '-').join(', ')})` : ''}${hard.length ? ` HARD: ${hard.join(', ')}` : ''}`)
   }
   return rows
 }
@@ -155,7 +170,8 @@ function report(baseRef, judgeName, decision, base, cand) {
     decision.newHard.length ? `New hard failures: ${decision.newHard.join('; ')}` : 'No new hard failures.', '',
     '| Prompt | Split | Baseline | Candidate | Worst problem (candidate) |', '| --- | --- | --- | --- | --- |',
     ...cand.map(c => { const b = base.find(x => x.id === c.id)
-      return `| ${c.id} | ${c.split} | ${b?.score ?? '-'} | ${c.score ?? '-'} | ${(c.scores?.worst ?? c.hard.join(', ') ?? '').replace(/\|/g, '/')} |` }),
+      const f = x => x == null ? '-' : Number.isInteger(x) ? x : x.toFixed(1)
+      return `| ${c.id} | ${c.split} | ${f(b?.score)} | ${f(c.score)} | ${(c.scores?.worst ?? c.hard.join(', ') ?? '').replace(/\|/g, '/')} |` }),
     '', `Scores are out of ${CRITERIA.length * 2}. A simple prompt answered PASS gets full marks; a wrong gate call gets 0.`,
   ]
   return lines.join('\n') + '\n'
@@ -167,12 +183,13 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const judgeName = arg('judge', 'codex')
   const only = arg('only')?.split(',')
   const split = arg('split')
+  const repeat = Math.max(1, Number(arg('repeat', '1')))
   const judge = JUDGES[judgeName]
   if (!judge) { console.error(`unknown judge ${judgeName}`); process.exit(2) }
   const cases = loadCases().filter(c => (!only || only.some(o => c.id.startsWith(o))) && (!split || c.split === split))
-  console.error(`Forging ${cases.length} prompts twice (${baseRef} and the working tree), judge: ${judgeName}`)
-  const base = await evaluate(baseRef, forgeSystem(sourceAt(baseRef)), cases, judge)
-  const cand = await evaluate('working', forgeSystem(sourceAt('working')), cases, judge)
+  console.error(`Forging ${cases.length} prompts ${repeat}x each with ${baseRef} and the working tree, judge: ${judgeName}`)
+  const base = await evaluate(baseRef, forgeSystem(sourceAt(baseRef)), cases, judge, repeat)
+  const cand = await evaluate('working', forgeSystem(sourceAt('working')), cases, judge, repeat)
   const decision = decide(base, cand)
   const out = join(HERE, 'results'); mkdirSync(out, { recursive: true })
   const stamp = new Date().toISOString().replace(/[:.]/g, '-')

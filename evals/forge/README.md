@@ -27,6 +27,8 @@ node evals/forge/run.mjs                      # working tree vs HEAD, judged by 
 node evals/forge/run.mjs --baseline v0.5.0    # against a release
 node evals/forge/run.mjs --judge claude       # if Codex isn't installed (same family: weaker check)
 node evals/forge/run.mjs --only 03,12         # a quick look at a few prompts
+node evals/forge/run.mjs --repeat 3           # each prompt 3 times: averages out noise; a hard
+                                              # failure in any repeat still counts
 node --test evals/forge/run.test.mjs                    # the eval's own unit tests (no model calls)
 ```
 
