@@ -93,8 +93,16 @@ MIT) and the BMad Method (github.com/bmad-code-org/BMAD-METHOD, MIT) are folded 
   `Hand back when:` (the same failure twice, an ASK FIRST reading met mid-work, a BOUNDS limit in the
   way, the budget spent). A stop is a result; REPORT says which condition ended the run.
   One budget covers the whole run and the runs VERIFY needs; no run is called cheap without
-  evidence. `Done when` is the OUTCOME itself, not a proxy; where only the person can confirm it,
-  or BOUNDS stops the last step, every section says the run ends there and hands back.
+  evidence. OUTCOME stays what the person asked for; `Done when` is that OUTCOME, checked by
+  something other than the agent. When a step needs approval, `Run ends at:` names it and says the
+  OUTCOME is not yet reached.
+
+**Audit before output**
+- Source: every claim about the situation traces to the input, or becomes a check or an inferred
+  assumption; nothing is declared free, safe or absent.
+- Open choices: every consequential default is ASK FIRST, and nothing presupposes the answer.
+- One story: OUTCOME, DO, VERIFY, STOP and BOUNDS agree; every DO action is allowed.
+- Reach: reads that could show credentials and metered queries need authority or go confirm-first.
 
 **Report**
 - How the work runs and ends: when it is finished, what gets handed over, and any exact reply format.
