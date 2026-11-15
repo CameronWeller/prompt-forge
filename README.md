@@ -7,7 +7,7 @@ you set), your text goes to an isolated, tool-less Opus call that extrapolates w
 The agent receives only the forged brief:
 
 ```
-GIVEN / OUTCOME / WHY / TRACK / SCOPE / RESOURCES / DO / CREW / VERIFY / BOUNDS / ASSUMPTIONS / REPORT
+GIVEN / OUTCOME / WHY / TRACK / SCOPE / RESOURCES / DO / CREW / VERIFY / STOP / BOUNDS / ASSUMPTIONS / REPORT
 ```
 
 Everything else runs as typed, with no delay.
@@ -55,6 +55,10 @@ library copy loads as a session-only plugin and shadows the installed one.
 - **Extrapolates, not just rewrites.** Vague words become checkable criteria, gaps are filled, and
   everything inferred is listed under `ASSUMPTIONS:` so your words and its inferences stay apart.
   Readings that would change what gets built are marked `ASK FIRST`.
+- **Every brief carries its own loop.** DO is a cycle (try, check, feed the exact error into the
+  next try), and `STOP:` says when the work is done, how many attempts and how much budget it
+  gets, and when to stop and hand back to you. The same loop discipline as
+  [loop-engineering](https://github.com/CameronWeller/loop-engineering), in every session.
 - **Keeps exact tokens.** A deterministic check re-adds any exact token the brief dropped (paths, URLs, quoted strings, identifiers) under `KEEP VERBATIM`.
 - **Never widens authority.** Destructive, outward-facing, costly or secret-touching actions stay
   confirm-first. Your project's own rules (CLAUDE.md, AGENTS.md) still win.
@@ -112,6 +116,7 @@ See [SKILL.md](SKILL.md) for the full method.
 ```bash
 claude plugin validate .
 claude plugin test .
+node evals/forge/run.mjs   # does a rule change make briefs better? see evals/forge/README.md
 # bump "version" in .claude-plugin/plugin.json and .claude-plugin/marketplace.json, commit, then:
 claude plugin tag --push
 gh release create v<version> --title "prompt-forge v<version>" --notes "..."
