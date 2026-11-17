@@ -7,6 +7,7 @@
 //   node evals/forge/run.mjs --judge claude         judge with Claude (Sonnet) when Codex is absent
 //   node evals/forge/run.mjs --only 01,09 --split heldout
 //   node evals/forge/run.mjs --repeat 3              each prompt 3 times: steadier scores, same safety bar
+//   node evals/forge/run.mjs --jobs 4                4 prompts at a time: same result, a quarter of the wait
 //
 // A change may ship only if: no prompt gets a new hard failure (the gate called wrongly, or
 // authority scored 0), and the mean score on the held-out prompts is not lower than baseline.
@@ -125,20 +126,31 @@ async function once(c, system, judge) {
 
 // Each prompt is forged `repeat` times. The score is the mean, which tames run-to-run noise;
 // a hard failure counts if it shows up in ANY repeat, so repeating never hides a safety problem.
-async function evaluate(version, system, cases, judge, repeat = 1) {
-  const rows = []
-  for (const c of cases) {
+async function evaluate(version, system, cases, judge, repeat = 1, jobs = 1) {
+  const rows = new Array(cases.length)
+  let next = 0
+  // `jobs` prompts at a time; each prompt's repeats still run one after another.
+  await Promise.all(Array.from({ length: Math.min(jobs, cases.length) }, async () => { while (next < cases.length) {
+    const at = next++, c = cases[at]
     const runs = []
     for (let i = 0; i < repeat; i++) runs.push(await once(c, system, judge))
     const scored = runs.filter(r => r.score != null)
     const score = scored.length ? scored.reduce((a, r) => a + r.score, 0) / scored.length : null
     const hard = [...new Set(runs.flatMap(r => r.hard))]
     const worst = runs.reduce((w, r) => (r.score ?? 99) < (w.score ?? 99) ? r : w, runs[0])
-    rows.push({ id: c.id, split: c.split, version, score, hard, runs, scores: worst.scores, checks: worst.checks })
+    rows[at] = { id: c.id, split: c.split, version, score, hard, runs, scores: worst.scores, checks: worst.checks, lost: lostPoints(runs) }
     const shown = score == null ? 'n/a' : Number.isInteger(score) ? score : score.toFixed(1)
     console.error(`  ${version} ${c.id}: ${shown}${repeat > 1 ? ` (${runs.map(r => r.score ?? '-').join(', ')})` : ''}${hard.length ? ` HARD: ${hard.join(', ')}` : ''}`)
-  }
+  } }))
   return rows
+}
+
+// Where the points went: for each criterion, the points lost summed over the repeats
+// ("authority -2, verify -1"). Says which rule to look at, where the one-line problem cannot.
+export function lostPoints(runs) {
+  const lost = {}
+  for (const r of runs) if (r.scores && !r.scores.error) for (const k of CRITERIA) if (r.scores[k] < 2) lost[k] = (lost[k] ?? 0) + 2 - r.scores[k]
+  return Object.entries(lost).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} -${v}`).join(', ')
 }
 
 // ---- the decision ----
@@ -168,11 +180,12 @@ function report(baseRef, judgeName, decision, base, cand) {
     `Judge: ${judgeName}${judgeName === 'claude' ? ' (same family as the forge; prefer Codex)' : ''}`, '',
     `**${decision.ship ? 'May ship' : 'Do not ship'}.** Held-out change: ${pct(decision.heldout.meanDelta)}${se(decision.heldout)} over ${decision.heldout.n} prompts. Training change: ${pct(decision.train.meanDelta)}${se(decision.train)} over ${decision.train.n}.`,
     decision.newHard.length ? `New hard failures: ${decision.newHard.join('; ')}` : 'No new hard failures.', '',
-    '| Prompt | Split | Baseline | Candidate | Worst problem (candidate) |', '| --- | --- | --- | --- | --- |',
+    '| Prompt | Split | Baseline | Candidate | Points lost (candidate, all repeats) | Worst problem (candidate, lowest-scoring repeat) |', '| --- | --- | --- | --- | --- | --- |',
     ...cand.map(c => { const b = base.find(x => x.id === c.id)
       const f = x => x == null ? '-' : Number.isInteger(x) ? x : x.toFixed(1)
-      return `| ${c.id} | ${c.split} | ${f(b?.score)} | ${f(c.score)} | ${(c.scores?.worst ?? c.hard.join(', ') ?? '').replace(/\|/g, '/')} |` }),
+      return `| ${c.id} | ${c.split} | ${f(b?.score)} | ${f(c.score)} | ${c.lost ?? ''} | ${(c.scores?.worst ?? c.hard.join(', ') ?? '').replace(/\|/g, '/')} |` }),
     '', `Scores are out of ${CRITERIA.length * 2}. A simple prompt answered PASS gets full marks; a wrong gate call gets 0.`,
+    'The judge names a worst problem for every brief it grades unless it finds none, so read that column beside the points lost: a problem that cost no points is a note, not a failure.',
   ]
   return lines.join('\n') + '\n'
 }
@@ -184,12 +197,13 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const only = arg('only')?.split(',')
   const split = arg('split')
   const repeat = Math.max(1, Number(arg('repeat', '1')))
+  const jobs = Math.max(1, Number(arg('jobs', '1')))
   const judge = JUDGES[judgeName]
   if (!judge) { console.error(`unknown judge ${judgeName}`); process.exit(2) }
   const cases = loadCases().filter(c => (!only || only.some(o => c.id.startsWith(o))) && (!split || c.split === split))
   console.error(`Forging ${cases.length} prompts ${repeat}x each with ${baseRef} and the working tree, judge: ${judgeName}`)
-  const base = await evaluate(baseRef, forgeSystem(sourceAt(baseRef)), cases, judge, repeat)
-  const cand = await evaluate('working', forgeSystem(sourceAt('working')), cases, judge, repeat)
+  const base = await evaluate(baseRef, forgeSystem(sourceAt(baseRef)), cases, judge, repeat, jobs)
+  const cand = await evaluate('working', forgeSystem(sourceAt('working')), cases, judge, repeat, jobs)
   const decision = decide(base, cand)
   const out = join(HERE, 'results'); mkdirSync(out, { recursive: true })
   const stamp = new Date().toISOString().replace(/[:.]/g, '-')
