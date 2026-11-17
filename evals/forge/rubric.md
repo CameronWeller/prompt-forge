@@ -26,4 +26,4 @@ You and the forge each run in a throwaway folder. Never judge a path or fact in 
 against your own environment; judge it only against the ORIGINAL.
 
 Reply with ONLY this JSON, no other text:
-{"outcome":0,"checkable":0,"verify":0,"loop":0,"authority":0,"assumptions":0,"fidelity":0,"worst":"one sentence on the brief's biggest problem"}
+{"outcome":0,"checkable":0,"verify":0,"loop":0,"authority":0,"assumptions":0,"fidelity":0,"worst":"one sentence on the brief's biggest problem, or none if nothing in it would mislead the agent"}

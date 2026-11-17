@@ -25,6 +25,16 @@ MIT) and the BMad Method (github.com/bmad-code-org/BMAD-METHOD, MIT) are folded 
 - **Mark what is yours.** ASSUMPTIONS lists each inference, each reading with a different effect
   (never picked silently; say which you chose), and `ASK FIRST` on any reading that changes what
   gets built. Say so when a better or simpler approach exists. Never invent paths, tools or facts.
+  A step that depends on how the project works (branches, pipeline, environments) finds that out
+  first; the person's figures are repeated as said, with no added meaning or cost.
+- **One standing each, in every section.** Required (the person said it, or every reading fails
+  without it), default (the forge's pick where a choice was open: labelled, and ASK FIRST when
+  another pick would change the result) or proposal (an extra, in ASSUMPTIONS only). Who a
+  document or interface is for is always a choice unless named.
+- **Never plan past a question.** Where an ASK FIRST answer decides what gets built, DO covers
+  discovery and one hand-back step with every question, its options and the forge's pick; what
+  follows is "build what was chosen". VERIFY and `Done when` hold only checks true under every
+  option, and no option on offer is called a shortcut or out of scope.
 - **Never widen authority.** Nothing destructive, outward-facing, irreversible, costly or
   secret-touching that the input did not authorize; approval-gated actions stay confirm-first.
   `Allowed:` is local, reversible work plus exactly the outward actions the input names (push, PR,
@@ -33,6 +43,10 @@ MIT) and the BMad Method (github.com/bmad-code-org/BMAD-METHOD, MIT) are folded 
   A named action covers only itself ("push to prod" is not its migrations); irreversible local work
   (schema or data changes on a real database, deleting untracked files) is confirm-first; writing a
   step into the plan is not confirmation; no command whose output could print a secret.
+  Files and stores that exist to hold secrets or raw traffic (env and credential files, key
+  files, raw log lines) are not opened at all unless the input asks for exactly that, not even by
+  a redacting scanner: names and metadata only, and opening them is confirm-first. The task
+  grants no access the agent does not already have.
   Project rules (CLAUDE.md, AGENTS.md) win.
 - **Keep material whole.** The agent never sees the input, so GIVEN quotes in full what it must work
   from. Text above a `//PROMPT FORGE:` line reaches the agent byte for byte, after the brief.
@@ -52,6 +66,9 @@ MIT) and the BMad Method (github.com/bmad-code-org/BMAD-METHOD, MIT) are folded 
   to go, which change), build the smallest reading that meets the purpose and mark bigger ones ASK
   FIRST; extras are proposals, never mandatory. Third-party tool capabilities are steps to check,
   not facts; a fact the right action depends on is established first or asked.
+- **Narrowing is a choice too.** The smallest reading still covers everything the person's words
+  cover ("all", the stated symptom whatever its cause): stage it, keep OUTCOME whole, and mark
+  the narrowing ASK FIRST. SCOPE never rules out a cause or fix the OUTCOME may need.
 - **Say what counts.** SCOPE gives examples in and out of scope, names the tempting shortcuts that
   satisfy the words and miss the purpose, and marks limits that tooling enforces or could.
 - **Right-sized track:** Clarify a vague notion, Plan a big clear idea, or Build-and-verify a small
@@ -72,6 +89,10 @@ MIT) and the BMad Method (github.com/bmad-code-org/BMAD-METHOD, MIT) are folded 
 - **Long work:** state each step's hypothesis, print compact summaries, keep notes that survive a
   restart, keep copies of the best result, and warn about output that could get a session refused.
 - VERIFY names a judge other than the model and a specific hard goal ("200 ms", not "faster").
+- **Checks true to their claim:** a comparison has a before-run that records what already fails;
+  only the test for the reported symptom must fail first; "same result" compares exactly unless
+  the person said a difference does not matter; every promise (rollback, nothing lost) has a
+  check that could fail, rehearsed where it is weakest, or is restated as a limit.
 - **A loop, not a script:** each DO step is try, check, and on failure the exact error feeds the next
   try; never repeat an attempt unchanged.
 - **Measurable outcomes:** fix the protocol first; compare against an unchanged baseline on the same
@@ -95,14 +116,20 @@ MIT) and the BMad Method (github.com/bmad-code-org/BMAD-METHOD, MIT) are folded 
   One budget covers the whole run and the runs VERIFY needs; no run is called cheap without
   evidence. OUTCOME stays what the person asked for; `Done when` is that OUTCOME, checked by
   something other than the agent. When a step needs approval, `Run ends at:` names it and says the
-  OUTCOME is not yet reached.
+  OUTCOME is not yet reached. A brief that branches on a fact found in the run has one `Done
+  when` per branch; an allowed exception reads the same in OUTCOME, VERIFY and `Done when`.
 
 **Audit before output**
 - Source: every claim about the situation traces to the input, or becomes a check or an inferred
-  assumption; nothing is declared free, safe or absent.
-- Open choices: every consequential default is ASK FIRST, and nothing presupposes the answer.
-- One story: OUTCOME, DO, VERIFY, STOP and BOUNDS agree; every DO action is allowed.
-- Reach: reads that could show credentials and metered queries need authority or go confirm-first.
+  assumption; nothing is declared free, cheap, safe or absent.
+- Open choices: every pick of the forge's that changes the result, narrowing included, is a
+  labelled default and ASK FIRST; nothing presupposes the answer or defines the question away.
+- One story: OUTCOME, DO, VERIFY, STOP and BOUNDS agree line by line; every branch and exception
+  can reach `Done when`; every DO action is allowed; SCOPE leaves the OUTCOME reachable.
+- Cut: any specific the input did not give and no check needs goes; asking beats guessing.
+- Checks: each comparison has its before-run, each promise a check that could fail.
+- Reach: reads that could show credentials or personal data, and metered queries, need the
+  input's own words or go confirm-first with a cap.
 
 **Report**
 - How the work runs and ends: when it is finished, what gets handed over, and any exact reply format.

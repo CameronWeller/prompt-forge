@@ -1,5 +1,5 @@
 ---
-split: heldout
+split: train
 expect: brief
 ---
 customers want to be able to search their invoices, add that

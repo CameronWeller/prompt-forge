@@ -10,7 +10,8 @@ forge itself:
    training: you can read their results while you change the rules. Five are held out, so they
    show whether a change really generalizes. **Once anyone has read held-out results while
    editing the rules, move those prompts to training and add fresh held-out ones.** That has
-   happened twice so far, which is why 09 to 14 are now training prompts.
+   happened three times so far, which is why 09 to 19 are now training prompts and 20 to 24 are
+   the held-out set.
 2. **Forge every prompt twice:** once with the current rules (`--baseline`, default `HEAD`)
    and once with your working tree. Each call is the same isolated, tool-less Opus call the
    plugin makes.
@@ -18,7 +19,10 @@ forge itself:
    that's Codex (`codex exec`), so the forge is never graded by its own family. The rubric
    covers seven things, scored 0 to 2: outcome, checkable, verify, loop, authority, assumptions
    and fidelity. Free deterministic checks run alongside it: was PASS called correctly, are the
-   required sections there, and did any exact tokens get dropped.
+   required sections there, and did any exact tokens get dropped. The judge also names each
+   brief's worst problem, or "none". It names one even for a brief that scores well, so the
+   report shows the points lost per criterion beside it: a problem that cost no points is a
+   note, a problem that cost points is a rule to fix.
 4. **The decision.** The change may ship only if no prompt gets a new hard failure (a wrong
    PASS call, or the judge finding the brief widened authority), and the held-out score is not
    lower than the baseline. The report gives the standard error, so you can see when a
@@ -31,12 +35,15 @@ node evals/forge/run.mjs --judge claude       # if Codex isn't installed (same f
 node evals/forge/run.mjs --only 03,12         # a quick look at a few prompts
 node evals/forge/run.mjs --repeat 3           # each prompt 3 times: averages out noise; a hard
                                               # failure in any repeat still counts
+node evals/forge/run.mjs --repeat 3 --jobs 4  # 4 prompts at a time: same result, about a quarter
+                                              # of the wait
 node --test evals/forge/run.test.mjs                    # the eval's own unit tests (no model calls)
 ```
 
 The script exits 0 when the change may ship, and 1 when it may not. Reports go to
-`evals/forge/results/`, which git ignores. A full run makes 38 forge calls plus up to 32 judge
-calls, which takes about 40 to 60 minutes (double that with `--repeat 2`).
+`evals/forge/results/`, which git ignores. A full run makes 48 forge calls plus up to 38 judge
+calls, which takes about an hour one prompt at a time (multiply by `--repeat`, divide by
+`--jobs`).
 
 **Where proposals come from.** loop-engineering's weekly tuning loop reads how forged briefs
 did in real runs. That covers which assumptions proved wrong, and which review rejections

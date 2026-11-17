@@ -2,7 +2,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { checks, decide, extractPrompt, forgeSystem, parseCase, parseScores } from './run.mjs'
+import { checks, decide, extractPrompt, forgeSystem, lostPoints, parseCase, parseScores } from './run.mjs'
 
 const row = (id, split, score, hard = []) => ({ id, split, score, hard })
 
@@ -33,4 +33,11 @@ test('judge replies must be the JSON scores, each 0 to 2', () => {
   assert.equal(parseScores(`Here you go: ${ok}`).loop, 0)
   assert.throws(() => parseScores(ok.replace('"loop":0', '"loop":5')), /not 0, 1 or 2/)
   assert.throws(() => parseScores('no json'), /no JSON/)
+})
+
+test('points lost are summed per criterion over the repeats, biggest first', () => {
+  const full = { outcome: 2, checkable: 2, verify: 2, loop: 2, authority: 2, assumptions: 2, fidelity: 2 }
+  assert.equal(lostPoints([{ scores: full }, { scores: null }]), '')
+  assert.equal(lostPoints([{ scores: { ...full, verify: 1 } }, { scores: { ...full, verify: 1, authority: 0 } }, { scores: { error: 'x' } }]),
+    'verify -2, authority -2')
 })
